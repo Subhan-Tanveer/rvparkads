@@ -58,10 +58,11 @@ async function init() {
   document.getElementById('parkDetailRows').innerHTML = [
     row('Number of Sites', l.numSites),
     row('RV Spaces', l.rvSpaces),
-    row('Tent Spaces', l.tentSpaces),
+    row('Full Hook Up Spaces', l.fullHookupSpaces),
+    row('Tent Sites', l.tentSpaces),
     row('Cabins', l.cabins),
     row('Yurts', l.yurts),
-    row('Rental Type', l.rentalType),
+    row('Rental Type', l.rentalTypes.length ? l.rentalTypes.join(', ') : null),
     row('Reservation System', l.reservationSystem),
   ].join('') || '<p class="lede">No additional details provided.</p>';
 
@@ -69,6 +70,8 @@ async function init() {
     row('Asking Price', formatUsd(l.askingPriceCents)),
     row('Annual Revenue', formatUsd(l.annualRevenueCents)),
     row('Occupancy Rate', l.occupancyRate != null ? `${l.occupancyRate}%` : null),
+    row('Owner Financing Considered', l.ownerFinancing ? 'Yes' : 'No'),
+    row('Extra Land for Expansion', l.expansionLand ? 'Yes' : 'No'),
   ].join('');
   if (financialsHtml) {
     document.getElementById('financialsCard').style.display = 'block';

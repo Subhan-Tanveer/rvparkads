@@ -117,12 +117,15 @@ form.addEventListener('submit', async (e) => {
   const data = Object.fromEntries(new FormData(form).entries());
   const amenities = Array.from(form.querySelectorAll('input[name="amenities"]:checked')).map((el) => el.value);
   const features = Array.from(form.querySelectorAll('input[name="features"]:checked')).map((el) => el.value);
+  const rentalTypes = Array.from(form.querySelectorAll('input[name="rentalTypes"]:checked')).map((el) => el.value);
+  const ownerFinancing = document.getElementById('ownerFinancing').checked;
+  const expansionLand = document.getElementById('expansionLand').checked;
 
   try {
     const res = await fetch('/api/submit-listing', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, amenities, features, sessionId, photoUrls: uploadedPhotos }),
+      body: JSON.stringify({ ...data, amenities, features, rentalTypes, ownerFinancing, expansionLand, sessionId, photoUrls: uploadedPhotos }),
     });
     if (res.status === 401) {
       window.location.href = 'login.html';

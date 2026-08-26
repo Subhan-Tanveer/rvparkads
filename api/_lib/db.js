@@ -49,20 +49,26 @@ export async function ensureSchema() {
       park_address TEXT NOT NULL,
       num_sites TEXT,
       rv_spaces TEXT,
+      full_hookup_spaces TEXT,
       tent_spaces TEXT,
       cabins TEXT,
       yurts TEXT,
-      rental_type TEXT,
+      rental_types TEXT[],
       amenities TEXT[],
       features TEXT[],
       reservation_system TEXT,
       asking_price_cents INTEGER,
       annual_revenue_cents INTEGER,
       occupancy_rate NUMERIC,
+      owner_financing BOOLEAN NOT NULL DEFAULT false,
+      expansion_land BOOLEAN NOT NULL DEFAULT false,
       description TEXT,
       photo_urls TEXT[],
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    ALTER TABLE ads_listings ADD COLUMN IF NOT EXISTS full_hookup_spaces TEXT;
+    ALTER TABLE ads_listings ADD COLUMN IF NOT EXISTS owner_financing BOOLEAN NOT NULL DEFAULT false;
+    ALTER TABLE ads_listings ADD COLUMN IF NOT EXISTS expansion_land BOOLEAN NOT NULL DEFAULT false;
   `);
   return schemaReady;
 }

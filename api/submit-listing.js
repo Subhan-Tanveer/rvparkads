@@ -61,19 +61,23 @@ export default async function handler(req, res) {
 
     const plan = PLANS[planKey] || PLANS.level1;
     const photoUrls = Array.isArray(b.photoUrls) ? b.photoUrls.slice(0, 15) : [];
+    const rentalTypes = Array.isArray(b.rentalTypes) ? b.rentalTypes : [];
+    const ownerFinancing = !!b.ownerFinancing;
+    const expansionLand = !!b.expansionLand;
 
     const inserted = await query(
       `INSERT INTO ads_listings (
-        seller_id, order_id, plan_key, park_name, park_address, num_sites, rv_spaces, tent_spaces, cabins, yurts,
-        rental_type, amenities, features, reservation_system, asking_price_cents, annual_revenue_cents,
-        occupancy_rate, description, photo_urls
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id`,
+        seller_id, order_id, plan_key, park_name, park_address, num_sites, rv_spaces, full_hookup_spaces,
+        tent_spaces, cabins, yurts, rental_types, amenities, features, reservation_system, asking_price_cents,
+        annual_revenue_cents, occupancy_rate, owner_financing, expansion_land, description, photo_urls
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING id`,
       [
         seller.id, sessionId, planKey, b.parkName, b.parkAddress, b.numSites || null, b.rvSpaces || null,
-        b.tentSpaces || null, b.cabins || null, b.yurts || null, b.rentalType || null,
+        b.fullHookupSpaces || null, b.tentSpaces || null, b.cabins || null, b.yurts || null, rentalTypes,
         Array.isArray(b.amenities) ? b.amenities : [], Array.isArray(b.features) ? b.features : [],
         b.reservationSystem || null, toCentsOrNull(b.askingPrice), toCentsOrNull(b.annualRevenue),
-        b.occupancyRate ? Number(b.occupancyRate) : null, b.description || null, photoUrls,
+        b.occupancyRate ? Number(b.occupancyRate) : null, ownerFinancing, expansionLand,
+        b.description || null, photoUrls,
       ]
     );
     const listingId = inserted.rows[0].id;
@@ -81,9 +85,27 @@ export default async function handler(req, res) {
     const sellerName = `${seller.firstName} ${seller.lastName}`;
     const amenitiesList = Array.isArray(b.amenities) && b.amenities.length ? b.amenities.join(', ') : null;
     const featuresList = Array.isArray(b.features) && b.features.length ? b.features.join(', ') : null;
+    const rentalTypesList = rentalTypes.length ? rentalTypes.join(', ') : null;
     const askingPriceFmt = b.askingPrice ? `$${Number(b.askingPrice).toLocaleString('en-US')}` : null;
     const annualRevenueFmt = b.annualRevenue ? `$${Number(b.annualRevenue).toLocaleString('en-US')}` : null;
     const occupancyFmt = b.occupancyRate ? `${b.occupancyRate}%` : null;
+
+    const parkRows = [
+      ['Park Name', b.parkName],
+      ['Address', b.parkAddress],
+      ['Number of Sites', b.numSites],
+      ['RV Spaces', b.rvSpaces],
+      ['Full Hook Up Spaces', b.fullHookupSpaces],
+      ['Tent Sites', b.tentSpaces],
+      ['Cabins', b.cabins],
+      ['Yurts', b.yurts],
+      ['Rental Type', rentalTypesList],
+      ['Reservation System', b.reservationSystem],
+    ];
+    const sellerConsiderationsRows = [
+      ['Owner Financing Considered', ownerFinancing ? 'Yes' : 'No'],
+      ['Extra Land for Expansion', expansionLand ? 'Yes' : 'No'],
+    ];
 
     // Marie gets the full listing — every field the seller entered,
     // grouped into sections so it's scannable at a glance instead of one
@@ -105,20 +127,7 @@ export default async function handler(req, res) {
               ['Plan', plan.name],
             ],
           },
-          {
-            heading: 'Park',
-            rows: [
-              ['Park Name', b.parkName],
-              ['Address', b.parkAddress],
-              ['Number of Sites', b.numSites],
-              ['RV Spaces', b.rvSpaces],
-              ['Tent Spaces', b.tentSpaces],
-              ['Cabins', b.cabins],
-              ['Yurts', b.yurts],
-              ['Rental Type', b.rentalType],
-              ['Reservation System', b.reservationSystem],
-            ],
-          },
+          { heading: 'Park', rows: parkRows },
           {
             heading: 'Financials',
             rows: [
@@ -134,6 +143,7 @@ export default async function handler(req, res) {
               ['Features', featuresList],
             ],
           },
+          { heading: 'Seller Considerations', rows: sellerConsiderationsRows },
         ],
         closing: b.description ? `Description: ${b.description}` : null,
         photos: photoUrls,
@@ -151,25 +161,23 @@ export default async function handler(req, res) {
         title: `Thanks, ${seller.firstName}!`,
         intro: `We've received your ${plan.name} listing for ${b.parkName}. Our team will review it and it'll be live shortly. Buyer inquiries will be forwarded straight to ${seller.email} and ${seller.phone}.`,
         sections: [
+          { heading: 'Your Listing', rows: [['Plan', plan.name], ...parkRows.filter(([label]) => label !== 'Park Name' && label !== 'Address')] },
           {
-            heading: 'Your Listing',
+            heading: 'Financials',
             rows: [
-              ['Plan', plan.name],
-              ['Park Name', b.parkName],
-              ['Address', b.parkAddress],
-              ['Number of Sites', b.numSites],
-              ['RV Spaces', b.rvSpaces],
-              ['Tent Spaces', b.tentSpaces],
-              ['Cabins', b.cabins],
-              ['Yurts', b.yurts],
-              ['Rental Type', b.rentalType],
               ['Asking Price', askingPriceFmt],
               ['Annual Revenue', annualRevenueFmt],
               ['Occupancy Rate', occupancyFmt],
+            ],
+          },
+          {
+            heading: 'Amenities & Features',
+            rows: [
               ['Amenities', amenitiesList],
               ['Features', featuresList],
             ],
           },
+          { heading: 'Seller Considerations', rows: sellerConsiderationsRows },
         ],
         photos: photoUrls,
         cta: { label: 'View Your Account', href: 'https://rvparkads.vercel.app/dashboard.html' },

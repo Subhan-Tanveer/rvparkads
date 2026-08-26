@@ -41,18 +41,18 @@
 
         <div class="form-field"><label for="numSites">Number of Sites</label><input id="numSites" name="numSites" type="number" min="0"></div>
         <div class="form-field"><label for="rvSpaces">RV Spaces</label><input id="rvSpaces" name="rvSpaces" type="number" min="0"></div>
-        <div class="form-field"><label for="tentSpaces">Tent Spaces</label><input id="tentSpaces" name="tentSpaces" type="number" min="0"></div>
+        <div class="form-field"><label for="fullHookupSpaces">Full Hook Up Spaces</label><input id="fullHookupSpaces" name="fullHookupSpaces" type="number" min="0"></div>
+        <div class="form-field"><label for="tentSpaces">Tent Sites</label><input id="tentSpaces" name="tentSpaces" type="number" min="0"></div>
         <div class="form-field"><label for="cabins">Cabins</label><input id="cabins" name="cabins" type="number" min="0"></div>
         <div class="form-field"><label for="yurts">Yurts</label><input id="yurts" name="yurts" type="number" min="0"></div>
-        <div class="form-field">
-          <label for="rentalType">Rental Type</label>
-          <select id="rentalType" name="rentalType">
-            <option value="">Select…</option>
-            <option>Nightly</option>
-            <option>Weekly</option>
-            <option>Monthly</option>
-            <option>Mixed</option>
-          </select>
+
+        <div class="form-field full">
+          <label>Rental Type <span class="hint">(optional — select all that apply)</span></label>
+          <div class="checkbox-grid">
+            <label class="checkbox-item"><input type="checkbox" name="rentalTypes" value="Nightly"> Nightly</label>
+            <label class="checkbox-item"><input type="checkbox" name="rentalTypes" value="Weekly"> Weekly</label>
+            <label class="checkbox-item"><input type="checkbox" name="rentalTypes" value="Monthly"> Monthly</label>
+          </div>
         </div>
 
         <div class="form-field"><label for="askingPrice">Asking Price (USD)<span class="hint"> — optional</span></label><input id="askingPrice" name="askingPrice" type="number" min="0" step="1000" placeholder="e.g. 1250000"></div>
@@ -68,6 +68,7 @@
             <label class="checkbox-item"><input type="checkbox" name="amenities" value="Laundry / Bath House"> Laundry / Bath House</label>
             <label class="checkbox-item"><input type="checkbox" name="amenities" value="30 Amp"> 30 Amp</label>
             <label class="checkbox-item"><input type="checkbox" name="amenities" value="50 Amp"> 50 Amp</label>
+            <label class="checkbox-item"><input type="checkbox" name="amenities" value="Dog Park"> Dog Park</label>
           </div>
         </div>
 
@@ -81,6 +82,14 @@
             <label class="checkbox-item"><input type="checkbox" name="features" value="Playground / Games Area"> Playground / Games Area</label>
             <label class="checkbox-item"><input type="checkbox" name="features" value="Picnic Area"> Picnic Area</label>
             <label class="checkbox-item"><input type="checkbox" name="features" value="Fire Pits"> Fire Pits</label>
+          </div>
+        </div>
+
+        <div class="form-field full">
+          <label>Seller Considerations <span class="hint">(optional)</span></label>
+          <div class="checkbox-grid">
+            <label class="checkbox-item"><input type="checkbox" id="ownerFinancing" name="ownerFinancing"> Owner financing considered</label>
+            <label class="checkbox-item"><input type="checkbox" id="expansionLand" name="expansionLand"> Extra land available for expansion</label>
           </div>
         </div>
 
