@@ -58,6 +58,27 @@ function renderPlan(plan, subscription) {
   });
 }
 
+async function renderAdminListings() {
+  const card = document.getElementById('adminListingsCard');
+  card.style.display = 'block';
+  const res = await fetch('/api/admin-listings');
+  const data = await res.json();
+  if (!res.ok) {
+    document.getElementById('adminListingsList').innerHTML = `<p class="lede">${data.error || 'Could not load listings'}</p>`;
+    return;
+  }
+  if (!data.listings.length) {
+    document.getElementById('adminListingsEmpty').style.display = 'block';
+    return;
+  }
+  document.getElementById('adminListingsList').innerHTML = data.listings.map((l) => `
+    <a href="listing-detail.html?id=${l.id}" class="dash-row" style="text-decoration:none; cursor:pointer;">
+      <span>${l.parkName} — ${l.sellerName}</span>
+      <strong>${l.planName.replace('RVParkAds.com — ', '')} &rarr;</strong>
+    </a>
+  `).join('');
+}
+
 async function init() {
   try {
     const res = await fetch('/api/account');
@@ -74,22 +95,35 @@ async function init() {
     document.getElementById('profPhone').textContent = data.seller.phone;
     renderAccountMenu(document.getElementById('accountSlot'), data.seller, { includeDashboardLink: false });
 
-    renderPlan(data.plan, data.subscription);
+    if (data.seller.isAdmin) {
+      // An admin account (Marie) manages listings, not their own plan —
+      // skip the seller-facing plan/listing cards entirely.
+      document.getElementById('planCard').style.display = 'none';
+      await renderAdminListings();
+    } else {
+      renderPlan(data.plan, data.subscription);
 
-    if (data.listing) {
-      document.getElementById('listingCard').style.display = 'block';
-      document.getElementById('listingContent').innerHTML = `
-        <div class="dash-row"><span>Park Name</span><strong>${data.listing.parkName}</strong></div>
-        <div class="dash-row"><span>Address</span><strong>${data.listing.parkAddress}</strong></div>
-        <div class="dash-row"><span>Submitted</span><strong>${formatDate(data.listing.createdAt)}</strong></div>
-      `;
-    } else if (data.plan) {
-      const noListingCard = document.getElementById('noListingCard');
-      noListingCard.style.display = 'block';
-      document.getElementById('noListingText').textContent = "You've paid for your plan — just add your park's details to finish your listing.";
-      const btn = document.getElementById('noListingBtn');
-      btn.href = 'complete-listing.html';
-      btn.querySelector('span').textContent = 'Complete Your Listing';
+      if (data.listing) {
+        document.getElementById('listingCard').style.display = 'block';
+        document.getElementById('listingContent').innerHTML = `
+          <div class="dash-row"><span>Park Name</span><strong>${data.listing.parkName}</strong></div>
+          <div class="dash-row"><span>Address</span><strong>${data.listing.parkAddress}</strong></div>
+          <div class="dash-row"><span>Submitted</span><strong>${formatDate(data.listing.createdAt)}</strong></div>
+        `;
+        const link = document.createElement('a');
+        link.href = `listing-detail.html?id=${data.listing.id}`;
+        link.className = 'btn btn-ghost btn-sm';
+        link.style.marginTop = '16px';
+        link.innerHTML = '<span>View Full Details</span>';
+        document.getElementById('listingContent').appendChild(link);
+      } else if (data.plan) {
+        const noListingCard = document.getElementById('noListingCard');
+        noListingCard.style.display = 'block';
+        document.getElementById('noListingText').textContent = "You've paid for your plan — just add your park's details to finish your listing.";
+        const btn = document.getElementById('noListingBtn');
+        btn.href = 'complete-listing.html';
+        btn.querySelector('span').textContent = 'Complete Your Listing';
+      }
     }
 
     loadingState.style.display = 'none';

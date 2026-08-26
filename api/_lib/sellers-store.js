@@ -14,6 +14,7 @@ function mapSeller(row) {
     stripeCustomerId: row.stripe_customer_id,
     stripeSubscriptionId: row.stripe_subscription_id,
     planKey: row.plan_key,
+    isAdmin: row.is_admin,
   };
 }
 
@@ -63,5 +64,27 @@ export async function setSellerStripeInfo(id, { customerId, subscriptionId, plan
 export async function getSellerListing(sellerId) {
   await ensureSchema();
   const res = await query('SELECT * FROM ads_listings WHERE seller_id = $1 ORDER BY created_at DESC LIMIT 1', [sellerId]);
+  return res.rows[0] || null;
+}
+
+// Admin-only reads — every listing across every seller, or one in full
+// detail. Callers are responsible for checking seller.isAdmin first.
+export async function getAllListings() {
+  await ensureSchema();
+  const res = await query(`
+    SELECT l.*, s.first_name, s.last_name, s.email AS seller_email, s.phone AS seller_phone
+    FROM ads_listings l JOIN ads_sellers s ON s.id = l.seller_id
+    ORDER BY l.created_at DESC
+  `);
+  return res.rows;
+}
+
+export async function getListingById(id) {
+  await ensureSchema();
+  const res = await query(`
+    SELECT l.*, s.first_name, s.last_name, s.email AS seller_email, s.phone AS seller_phone
+    FROM ads_listings l JOIN ads_sellers s ON s.id = l.seller_id
+    WHERE l.id = $1
+  `, [id]);
   return res.rows[0] || null;
 }

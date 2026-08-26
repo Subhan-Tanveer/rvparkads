@@ -37,10 +37,11 @@ export default async function handler(req, res) {
     const listing = await getSellerListing(seller.id);
     const plan = seller.planKey ? PLANS[seller.planKey] : null;
     return res.status(200).json({
-      seller: { firstName: seller.firstName, lastName: seller.lastName, email: seller.email, phone: seller.phone },
+      seller: { firstName: seller.firstName, lastName: seller.lastName, email: seller.email, phone: seller.phone, isAdmin: seller.isAdmin },
       plan: plan ? { key: seller.planKey, name: plan.name, monthly: plan.monthly } : null,
       subscription,
       listing: listing ? {
+        id: listing.id,
         parkName: listing.park_name,
         parkAddress: listing.park_address,
         createdAt: listing.created_at,

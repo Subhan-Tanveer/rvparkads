@@ -9,6 +9,7 @@ export default defineConfig({
         listing: resolve(import.meta.dirname, 'complete-listing.html'),
         login: resolve(import.meta.dirname, 'login.html'),
         dashboard: resolve(import.meta.dirname, 'dashboard.html'),
+        listingDetail: resolve(import.meta.dirname, 'listing-detail.html'),
       },
     },
   },

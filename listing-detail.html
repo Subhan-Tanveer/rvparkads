@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listing Detail — RVParkAds.com</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a href="index.html" class="logo">RVPark<span>Ads</span>.com</a>
+      <span id="accountSlot"></span>
+    </div>
+  </header>
+
+  <div id="loadingState" class="listing-status">
+    <p class="lede">Loading listing…</p>
+  </div>
+
+  <div id="errorState" class="listing-status error" style="display:none;">
+    <h2>Something went wrong</h2>
+    <p class="lede" id="errorMessage"></p>
+    <p><a href="dashboard.html" class="btn btn-primary" style="margin-top:24px;"><span>Back to Dashboard</span></a></p>
+  </div>
+
+  <main class="listing-shell" id="detailShell" style="display:none;">
+    <a href="dashboard.html" class="hint" style="display:inline-block; margin-bottom:16px;">&larr; Back to All Listings</a>
+
+    <div class="section-head" style="text-align:left; margin-bottom:24px;">
+      <p class="eyebrow" id="planLabel"></p>
+      <h2 id="parkNameHeading"></h2>
+      <p class="lede" id="parkAddressText"></p>
+    </div>
+
+    <div class="dash-card">
+      <h3>Seller</h3>
+      <div class="dash-row"><span>Name</span><strong id="dSellerName"></strong></div>
+      <div class="dash-row"><span>Email</span><strong id="dSellerEmail"></strong></div>
+      <div class="dash-row"><span>Phone</span><strong id="dSellerPhone"></strong></div>
+    </div>
+
+    <div class="dash-card">
+      <h3>Park Details</h3>
+      <div id="parkDetailRows"></div>
+    </div>
+
+    <div class="dash-card" id="financialsCard" style="display:none;">
+      <h3>Financials</h3>
+      <div id="financialsRows"></div>
+    </div>
+
+    <div class="dash-card" id="amenitiesCard" style="display:none;">
+      <h3>Amenities &amp; Features</h3>
+      <div id="amenitiesRows"></div>
+    </div>
+
+    <div class="dash-card" id="descriptionCard" style="display:none;">
+      <h3>Description</h3>
+      <p class="lede" id="descriptionText"></p>
+    </div>
+
+    <div class="dash-card" id="photosCard" style="display:none;">
+      <h3>Photos</h3>
+      <div class="file-preview-grid" id="photosGrid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));"></div>
+    </div>
+
+    <div class="dash-card">
+      <h3>Submitted</h3>
+      <div class="dash-row"><span>Date</span><strong id="dCreatedAt"></strong></div>
+    </div>
+  </main>
+
+  <script type="module" src="/src/js/listing-detail.js"></script>
+</body>
+</html>

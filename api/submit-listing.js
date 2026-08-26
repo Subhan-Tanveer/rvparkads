@@ -62,12 +62,12 @@ export default async function handler(req, res) {
     const plan = PLANS[planKey] || PLANS.level1;
     const photoUrls = Array.isArray(b.photoUrls) ? b.photoUrls.slice(0, 15) : [];
 
-    await query(
+    const inserted = await query(
       `INSERT INTO ads_listings (
         seller_id, order_id, plan_key, park_name, park_address, num_sites, rv_spaces, tent_spaces, cabins, yurts,
         rental_type, amenities, features, reservation_system, asking_price_cents, annual_revenue_cents,
         occupancy_rate, description, photo_urls
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id`,
       [
         seller.id, sessionId, planKey, b.parkName, b.parkAddress, b.numSites || null, b.rvSpaces || null,
         b.tentSpaces || null, b.cabins || null, b.yurts || null, b.rentalType || null,
@@ -76,6 +76,7 @@ export default async function handler(req, res) {
         b.occupancyRate ? Number(b.occupancyRate) : null, b.description || null, photoUrls,
       ]
     );
+    const listingId = inserted.rows[0].id;
 
     const sellerName = `${seller.firstName} ${seller.lastName}`;
     const amenitiesList = Array.isArray(b.amenities) && b.amenities.length ? b.amenities.join(', ') : null;
@@ -136,7 +137,7 @@ export default async function handler(req, res) {
         ],
         closing: b.description ? `Description: ${b.description}` : null,
         photos: photoUrls,
-        cta: { label: 'View in Dashboard', href: 'https://rvparkads.vercel.app/dashboard.html' },
+        cta: { label: 'View Full Listing', href: `https://rvparkads.vercel.app/listing-detail.html?id=${listingId}` },
       }),
     });
 

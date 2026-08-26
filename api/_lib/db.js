@@ -35,8 +35,10 @@ export async function ensureSchema() {
       stripe_customer_id TEXT,
       stripe_subscription_id TEXT,
       plan_key TEXT,
+      is_admin BOOLEAN NOT NULL DEFAULT false,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    ALTER TABLE ads_sellers ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT false;
 
     CREATE TABLE IF NOT EXISTS ads_listings (
       id SERIAL PRIMARY KEY,
