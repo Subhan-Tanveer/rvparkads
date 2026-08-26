@@ -99,6 +99,39 @@ function initAmbientBlobs() {
   });
 }
 
+// Replaces a header container with an avatar (initials) that opens a
+// small dropdown — used on both index.html (once logged in) and
+// dashboard.html, so the account menu looks and behaves the same
+// everywhere instead of a plain text "Log Out" link.
+export function renderAccountMenu(container, seller, { includeDashboardLink = true } = {}) {
+  const initials = `${(seller.firstName || '?')[0]}${(seller.lastName || '')[0] || ''}`.toUpperCase();
+  container.innerHTML = `
+    <div class="account-menu">
+      <button type="button" class="avatar-btn" id="avatarBtn" aria-label="Account menu">${initials}</button>
+      <div class="account-dropdown" id="accountDropdown">
+        <div class="account-dropdown-name">${seller.firstName} ${seller.lastName}</div>
+        ${includeDashboardLink ? '<a href="dashboard.html">My Account</a>' : ''}
+        <button type="button" id="menuLogoutBtn">Log Out</button>
+      </div>
+    </div>
+  `;
+  const btn = container.querySelector('#avatarBtn');
+  const dropdown = container.querySelector('#accountDropdown');
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('is-open');
+  });
+  document.addEventListener('click', () => dropdown.classList.remove('is-open'));
+  container.querySelector('#menuLogoutBtn').addEventListener('click', async () => {
+    await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'logout' }),
+    });
+    window.location.href = 'index.html';
+  });
+}
+
 export function initPage() {
   try {
     initSmoothScroll();

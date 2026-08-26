@@ -1,8 +1,10 @@
 // Vercel serverless function — POST /api/upload-token
 // Issues short-lived Vercel Blob upload tokens for listing photos. Upload
 // happens directly browser -> Blob; this server never receives the file
-// bytes. Requires a logged-in seller AND a paid checkout session that
-// belongs to that same account.
+// bytes. Requires a logged-in seller, plus either a paid checkout session
+// belonging to that account (fresh from Stripe redirect) or an account
+// that already has a plan on file (returning later to finish/resume a
+// listing — no session_id in that case).
 import { handleUpload } from '@vercel/blob/client';
 import Stripe from 'stripe';
 import { requireSession } from './_lib/auth.js';
@@ -28,15 +30,18 @@ export default async function handler(req, res) {
       body: req.body,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
         const { sessionId, count } = JSON.parse(clientPayload || '{}');
-        if (!sessionId) throw new Error('A valid checkout session is required to upload photos');
         if (count > MAX_PHOTOS) throw new Error(`You can upload up to ${MAX_PHOTOS} photos`);
 
-        const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
-        if (checkoutSession.client_reference_id !== String(seller.id)) {
-          throw new Error('This checkout session does not belong to your account');
-        }
-        if (checkoutSession.payment_status !== 'paid' && checkoutSession.status !== 'complete') {
-          throw new Error('This checkout session has not been paid');
+        if (sessionId) {
+          const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+          if (checkoutSession.client_reference_id !== String(seller.id)) {
+            throw new Error('This checkout session does not belong to your account');
+          }
+          if (checkoutSession.payment_status !== 'paid' && checkoutSession.status !== 'complete') {
+            throw new Error('This checkout session has not been paid');
+          }
+        } else if (!seller.planKey) {
+          throw new Error('Choose a plan first to upload photos');
         }
 
         return {

@@ -40,8 +40,8 @@ export async function ensureSchema() {
 
     CREATE TABLE IF NOT EXISTS ads_listings (
       id SERIAL PRIMARY KEY,
-      seller_id INTEGER NOT NULL REFERENCES ads_sellers(id),
-      order_id TEXT UNIQUE NOT NULL,
+      seller_id INTEGER NOT NULL UNIQUE REFERENCES ads_sellers(id),
+      order_id TEXT,
       plan_key TEXT NOT NULL,
       park_name TEXT NOT NULL,
       park_address TEXT NOT NULL,

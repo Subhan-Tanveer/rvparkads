@@ -32,28 +32,33 @@ export default async function handler(req, res) {
   if (!seller) return res.status(401).json({ error: 'Account not found' });
 
   const b = req.body || {};
-  const sessionId = b.sessionId;
-  if (!sessionId) return res.status(400).json({ error: 'Missing checkout session' });
+  const sessionId = b.sessionId || null;
   if (!b.parkName || !String(b.parkName).trim() || !b.parkAddress || !String(b.parkAddress).trim()) {
     return res.status(400).json({ error: 'Park name and address are required' });
   }
 
   try {
-    const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
-    if (checkoutSession.client_reference_id !== String(seller.id)) {
-      return res.status(403).json({ error: 'This checkout session does not belong to your account' });
-    }
-    if (checkoutSession.payment_status !== 'paid' && checkoutSession.status !== 'complete') {
-      return res.status(400).json({ error: 'This checkout session has not been paid' });
+    let planKey;
+    if (sessionId) {
+      const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+      if (checkoutSession.client_reference_id !== String(seller.id)) {
+        return res.status(403).json({ error: 'This checkout session does not belong to your account' });
+      }
+      if (checkoutSession.payment_status !== 'paid' && checkoutSession.status !== 'complete') {
+        return res.status(400).json({ error: 'This checkout session has not been paid' });
+      }
+      planKey = checkoutSession.metadata?.plan || 'level1';
+    } else {
+      if (!seller.planKey) return res.status(400).json({ error: 'Choose a plan first' });
+      planKey = seller.planKey;
     }
 
     await ensureSchema();
-    const existing = await query('SELECT id FROM ads_listings WHERE order_id = $1', [sessionId]);
+    const existing = await query('SELECT id FROM ads_listings WHERE seller_id = $1', [seller.id]);
     if (existing.rows.length > 0) {
-      return res.status(409).json({ error: 'A listing has already been submitted for this checkout session' });
+      return res.status(409).json({ error: 'A listing has already been submitted for your account' });
     }
 
-    const planKey = checkoutSession.metadata?.plan || 'level1';
     const plan = PLANS[planKey] || PLANS.level1;
     const photoUrls = Array.isArray(b.photoUrls) ? b.photoUrls.slice(0, 15) : [];
 

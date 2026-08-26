@@ -26,33 +26,48 @@ function showError(message) {
   document.getElementById('errorMessage').textContent = message;
 }
 
+function showForm(planKeyLabel) {
+  planLabel.textContent = planKeyLabel;
+  loadingState.style.display = 'none';
+  formShell.style.display = 'block';
+}
+
+function showAlreadyListed() {
+  loadingState.style.display = 'none';
+  successState.style.display = 'block';
+  document.getElementById('successMessage').textContent = "You've already submitted your park's details — we'll be in touch shortly.";
+}
+
+// Two ways to land here: fresh from a Stripe redirect (?session_id=...,
+// needs verifying + attaching to the account), or returning later to
+// finish/pick back up a listing for a plan already on the account (no
+// session_id — just needs the account to actually have a plan).
 async function init() {
-  if (!sessionId) return showError('No checkout session found. Please start from the plans page.');
-
-  try {
-    const res = await fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`);
-    if (res.status === 401) {
-      window.location.href = 'login.html';
-      return;
-    }
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Could not verify your payment');
-
-    if (!data.paid) return showError("We couldn't confirm your payment yet. If you just paid, wait a moment and refresh this page.");
-    if (data.alreadyListed) {
-      loadingState.style.display = 'none';
-      successState.style.display = 'block';
-      document.getElementById('successMessage').textContent = "You've already submitted your park's details for this checkout — we'll be in touch shortly.";
-      return;
-    }
-
-    planLabel.textContent = `Payment Confirmed — ${PLAN_LABELS[data.planKey] || 'Your Plan'}`;
-
-    loadingState.style.display = 'none';
-    formShell.style.display = 'block';
-  } catch (err) {
-    showError(err.message);
+  const accountRes = await fetch('/api/account');
+  if (accountRes.status === 401) {
+    window.location.href = 'login.html';
+    return;
   }
+  const account = await accountRes.json();
+  if (!accountRes.ok) return showError(account.error || 'Could not load your account');
+  if (account.listing) return showAlreadyListed();
+
+  if (sessionId) {
+    try {
+      const res = await fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not verify your payment');
+      if (!data.paid) return showError("We couldn't confirm your payment yet. If you just paid, wait a moment and refresh this page.");
+      if (data.alreadyListed) return showAlreadyListed();
+      showForm(`Payment Confirmed — ${PLAN_LABELS[data.planKey] || 'Your Plan'}`);
+    } catch (err) {
+      showError(err.message);
+    }
+    return;
+  }
+
+  if (!account.plan) return showError('Choose a plan first to start your listing.');
+  showForm(PLAN_LABELS[account.plan.key] || account.plan.name);
 }
 
 init();
@@ -75,7 +90,7 @@ photoInput.addEventListener('change', async () => {
 
     try {
       const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
-      const blob = await upload(`listings/${sessionId}/${Date.now()}-${safeName}`, file, {
+      const blob = await upload(`listings/${Date.now()}-${safeName}`, file, {
         access: 'public',
         handleUploadUrl: '/api/upload-token',
         clientPayload: JSON.stringify({ sessionId, count: uploadedPhotos.length + 1 }),

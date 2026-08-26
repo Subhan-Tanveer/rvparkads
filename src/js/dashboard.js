@@ -1,4 +1,4 @@
-import { initPage } from './core.js';
+import { initPage, renderAccountMenu } from './core.js';
 
 initPage();
 
@@ -72,6 +72,7 @@ async function init() {
     document.getElementById('profName').textContent = `${data.seller.firstName} ${data.seller.lastName}`;
     document.getElementById('profEmail').textContent = data.seller.email;
     document.getElementById('profPhone').textContent = data.seller.phone;
+    renderAccountMenu(document.getElementById('accountSlot'), data.seller, { includeDashboardLink: false });
 
     renderPlan(data.plan, data.subscription);
 
@@ -83,7 +84,12 @@ async function init() {
         <div class="dash-row"><span>Submitted</span><strong>${formatDate(data.listing.createdAt)}</strong></div>
       `;
     } else if (data.plan) {
-      document.getElementById('noListingCard').style.display = 'block';
+      const noListingCard = document.getElementById('noListingCard');
+      noListingCard.style.display = 'block';
+      document.getElementById('noListingText').textContent = "You've paid for your plan — just add your park's details to finish your listing.";
+      const btn = document.getElementById('noListingBtn');
+      btn.href = 'complete-listing.html';
+      btn.querySelector('span').textContent = 'Complete Your Listing';
     }
 
     loadingState.style.display = 'none';
@@ -94,12 +100,3 @@ async function init() {
 }
 
 init();
-
-document.getElementById('logoutBtn').addEventListener('click', async () => {
-  await fetch('/api/auth', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'logout' }),
-  });
-  window.location.href = 'index.html';
-});

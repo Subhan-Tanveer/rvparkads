@@ -1,4 +1,4 @@
-import { initPage } from './core.js';
+import { initPage, renderAccountMenu } from './core.js';
 import { PLANS, formatUsd } from './plans-data.js';
 import { gsap } from 'gsap';
 
@@ -26,11 +26,10 @@ PLANS.forEach((plan) => grid.appendChild(planCard(plan)));
 
 initPage();
 
-fetch('/api/account').then((res) => {
+fetch('/api/account').then(async (res) => {
   if (!res.ok) return;
-  const link = document.getElementById('accountLink');
-  link.textContent = 'My Account';
-  link.href = 'dashboard.html';
+  const data = await res.json();
+  renderAccountMenu(document.getElementById('accountSlot'), data.seller);
 }).catch(() => {});
 
 // Subtle 3D tilt on pricing cards, following the pointer — skipped
