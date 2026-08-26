@@ -28,11 +28,16 @@ function renderPlan(plan, subscription) {
     : subscription?.status === 'active' ? 'Active' : (subscription?.status || 'Unknown');
   const statusClass = subscription?.cancelAtPeriodEnd ? 'status-canceling' : (subscription?.status === 'active' ? 'status-active' : 'status-other');
 
+  const locked = subscription && !subscription.canCancel;
+  const lockedUntilLabel = locked ? formatDate(subscription.cancelEligibleAt) : null;
+
   content.innerHTML = `
     <div class="dash-row"><span>Plan</span><strong>${plan.name.replace('RVParkAds.com — ', '')}</strong></div>
     <div class="dash-row"><span>Price</span><strong>${formatUsd(plan.monthly)}/month</strong></div>
     <div class="dash-row"><span>Status</span><strong class="dash-status ${statusClass}">${statusLabel}</strong></div>
-    ${subscription && !subscription.cancelAtPeriodEnd ? `<button type="button" class="btn btn-ghost btn-sm" id="cancelBtn" style="margin-top:16px;"><span>Cancel Plan</span></button>` : ''}
+    ${plan.minMonths > 1 ? `<div class="dash-row"><span>Minimum Commitment</span><strong>${plan.minMonths} months</strong></div>` : ''}
+    ${subscription && !subscription.cancelAtPeriodEnd && !locked ? `<button type="button" class="btn btn-ghost btn-sm" id="cancelBtn" style="margin-top:16px;"><span>Cancel Plan</span></button>` : ''}
+    ${subscription && !subscription.cancelAtPeriodEnd && locked ? `<p class="hint" style="margin-top:12px;">This plan has a ${plan.minMonths}-month minimum — you can cancel starting ${lockedUntilLabel}.</p>` : ''}
     ${subscription?.cancelAtPeriodEnd ? `<p class="hint" style="margin-top:12px;">Your listing stays live until ${formatDate(subscription.currentPeriodEnd)}, then your plan won't renew.</p>` : ''}
   `;
 
