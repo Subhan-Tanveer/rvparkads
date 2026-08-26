@@ -1,11 +1,12 @@
 // Vercel serverless function — POST /api/upload-token
 // Issues short-lived Vercel Blob upload tokens for listing photos. Upload
 // happens directly browser -> Blob; this server never receives the file
-// bytes. Authorization is the paid Stripe session_id the client already
-// has from complete-listing.html — anyone without a real paid session_id
-// gets rejected, same as a login-gated upload would be on the main site.
+// bytes. Requires a logged-in seller AND a paid checkout session that
+// belongs to that same account.
 import { handleUpload } from '@vercel/blob/client';
 import Stripe from 'stripe';
+import { requireSession } from './_lib/auth.js';
+import { getSellerById } from './_lib/sellers-store.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const MAX_PHOTOS = 15;
@@ -16,6 +17,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const session = requireSession(req, res);
+  if (!session) return;
+  const seller = await getSellerById(session.sellerId);
+  if (!seller) return res.status(401).json({ error: 'Account not found' });
+
   try {
     const jsonResponse = await handleUpload({
       request: req,
@@ -25,8 +31,11 @@ export default async function handler(req, res) {
         if (!sessionId) throw new Error('A valid checkout session is required to upload photos');
         if (count > MAX_PHOTOS) throw new Error(`You can upload up to ${MAX_PHOTOS} photos`);
 
-        const session = await stripe.checkout.sessions.retrieve(sessionId);
-        if (session.payment_status !== 'paid' && session.status !== 'complete') {
+        const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+        if (checkoutSession.client_reference_id !== String(seller.id)) {
+          throw new Error('This checkout session does not belong to your account');
+        }
+        if (checkoutSession.payment_status !== 'paid' && checkoutSession.status !== 'complete') {
           throw new Error('This checkout session has not been paid');
         }
 

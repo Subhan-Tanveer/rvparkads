@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log In or Sign Up — RVParkAds.com</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a href="index.html" class="logo">RVPark<span>Ads</span>.com</a>
+    </div>
+  </header>
+
+  <main class="auth-shell">
+    <div class="auth-card" data-reveal>
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab is-active" data-tab="login">Log In</button>
+        <button type="button" class="auth-tab" data-tab="signup">Sign Up</button>
+      </div>
+
+      <form id="loginForm" class="auth-form">
+        <div class="form-field"><label for="liEmail">Email</label><input id="liEmail" type="email" required autocomplete="email"></div>
+        <div class="form-field"><label for="liPassword">Password</label><input id="liPassword" type="password" required autocomplete="current-password"></div>
+        <button type="submit" class="btn btn-primary" style="width:100%;"><span>Log In</span></button>
+        <div class="form-alert" id="loginAlert"></div>
+      </form>
+
+      <form id="signupForm" class="auth-form" style="display:none;">
+        <div class="form-grid">
+          <div class="form-field"><label for="suFirstName">First Name</label><input id="suFirstName" required></div>
+          <div class="form-field"><label for="suLastName">Last Name</label><input id="suLastName" required></div>
+          <div class="form-field full"><label for="suEmail">Email</label><input id="suEmail" type="email" required autocomplete="email"></div>
+          <div class="form-field full"><label for="suPhone">Phone</label><input id="suPhone" type="tel" required autocomplete="tel"></div>
+          <div class="form-field full"><label for="suPassword">Password</label><input id="suPassword" type="password" required minlength="8" autocomplete="new-password"><span class="hint">At least 8 characters</span></div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;"><span>Create Account</span></button>
+        <div class="form-alert" id="signupAlert"></div>
+      </form>
+    </div>
+  </main>
+
+  <script type="module" src="/src/js/login.js"></script>
+</body>
+</html>

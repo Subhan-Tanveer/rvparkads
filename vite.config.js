@@ -7,6 +7,8 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         listing: resolve(import.meta.dirname, 'complete-listing.html'),
+        login: resolve(import.meta.dirname, 'login.html'),
+        dashboard: resolve(import.meta.dirname, 'dashboard.html'),
       },
     },
   },

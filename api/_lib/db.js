@@ -1,7 +1,5 @@
-// Postgres connection — reuses the same Neon database as rvparksuccess.com
-// (DATABASE_URL env var, same value copied into this Vercel project) rather
-// than provisioning a separate database. Tables here are prefixed `ads_` so
-// they never collide with rvparksuccess's own tables.
+// Postgres connection — RVParkAds' own dedicated Neon database (separate
+// from rvparksuccess.com's), provisioned via Vercel's Storage tab.
 import pg from 'pg';
 
 const { Pool } = pg;
@@ -27,14 +25,24 @@ let schemaReady = null;
 export async function ensureSchema() {
   if (schemaReady) return schemaReady;
   schemaReady = query(`
+    CREATE TABLE IF NOT EXISTS ads_sellers (
+      id SERIAL PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      first_name TEXT NOT NULL,
+      last_name TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      stripe_customer_id TEXT,
+      stripe_subscription_id TEXT,
+      plan_key TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
     CREATE TABLE IF NOT EXISTS ads_listings (
       id SERIAL PRIMARY KEY,
+      seller_id INTEGER NOT NULL REFERENCES ads_sellers(id),
       order_id TEXT UNIQUE NOT NULL,
       plan_key TEXT NOT NULL,
-      seller_first_name TEXT NOT NULL,
-      seller_last_name TEXT NOT NULL,
-      seller_email TEXT NOT NULL,
-      seller_phone TEXT NOT NULL,
       park_name TEXT NOT NULL,
       park_address TEXT NOT NULL,
       num_sites TEXT,

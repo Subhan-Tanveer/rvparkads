@@ -7,27 +7,72 @@
   <meta name="description" content="Get your RV park in front of thousands of qualified buyers. Choose an advertising plan and go live today — no agent involved.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <header class="site-header">
     <div class="wrap header-inner">
       <a href="index.html" class="logo">RVPark<span>Ads</span>.com</a>
-      <nav class="site-nav">
+      <nav class="site-nav-pill">
         <a href="#plans">Plans</a>
         <a href="#faq">FAQ</a>
         <a href="https://www.rvparksales.com/contact/">Contact</a>
       </nav>
-      <a href="tel:+18508320022" class="header-phone">(850) 832-0022</a>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <a href="login.html" class="header-account-link" id="accountLink">Log In</a>
+        <a href="#plans" class="btn btn-primary btn-sm header-cta"><span>Get Listed</span></a>
+      </div>
     </div>
   </header>
 
   <section class="hero">
-    <div class="wrap">
-      <p class="eyebrow" data-reveal>Free, No-Obligation to Start</p>
-      <h1 data-reveal>Get Your RV Park In Front of Thousands of Qualified Buyers</h1>
-      <p class="lede" data-reveal>Choose the advertising plan that works for your park and start getting serious inquiries today — no agent involved.</p>
-      <a href="#plans" class="btn btn-primary" data-reveal><span>Choose Your Plan</span></a>
+    <div class="hero-blob hero-blob-1" aria-hidden="true"></div>
+    <div class="hero-blob hero-blob-2" aria-hidden="true"></div>
+    <div class="hero-blob hero-blob-3" aria-hidden="true"></div>
+    <div class="dot-grid" aria-hidden="true"></div>
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow hero-badge" data-hero-in><span class="dot-pulse"></span>Free, No-Obligation to Start</p>
+        <h1 data-hero-in>Get Your RV Park In Front of Thousands of <span class="text-gradient">Qualified Buyers</span></h1>
+        <p class="lede" data-hero-in>Choose the advertising plan that works for your park and start getting serious inquiries today — no agent involved.</p>
+        <div class="hero-actions" data-hero-in>
+          <a href="#plans" class="btn btn-primary btn-lg"><span>Choose Your Plan →</span></a>
+          <a href="#faq" class="btn btn-ghost btn-lg"><span>See How It Works</span></a>
+        </div>
+        <div class="hero-stats" data-hero-in>
+          <div><strong data-count-to="18" data-count-suffix="+">0+</strong><span>Years Experience</span></div>
+          <div><strong data-count-to="1000" data-count-suffix="+">0+</strong><span>Buyers Reached</span></div>
+          <div><strong data-count-to="3" data-count-suffix="">0</strong><span>Flexible Plans</span></div>
+        </div>
+      </div>
+      <div class="hero-visual" data-hero-in>
+        <div class="hero-card hero-card-main">
+          <div class="hero-card-top">
+            <span class="hero-card-tag">For Sale</span>
+            <span class="hero-card-price">$1.25M</span>
+          </div>
+          <div class="hero-card-name">Blue Ridge RV Retreat</div>
+          <div class="hero-card-meta">📍 Asheville, NC &nbsp;•&nbsp; 62 Sites</div>
+          <div class="hero-card-bar"><span style="width:78%"></span></div>
+          <div class="hero-card-foot">78% Occupancy &nbsp;·&nbsp; Featured Listing</div>
+        </div>
+        <div class="hero-card hero-card-float hero-card-float-1">✓ Verified Buyer Network</div>
+        <div class="hero-card hero-card-float hero-card-float-2">📈 12 Inquiries This Week</div>
+      </div>
+    </div>
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <span>No Agent Involved</span><span>•</span>
+        <span>Cancel Anytime</span><span>•</span>
+        <span>Nationwide Buyer Network</span><span>•</span>
+        <span>18+ Years Experience</span><span>•</span>
+        <span>Live In One Business Day</span><span>•</span>
+        <span>No Agent Involved</span><span>•</span>
+        <span>Cancel Anytime</span><span>•</span>
+        <span>Nationwide Buyer Network</span><span>•</span>
+        <span>18+ Years Experience</span><span>•</span>
+        <span>Live In One Business Day</span><span>•</span>
+      </div>
     </div>
   </section>
 
@@ -38,27 +83,29 @@
         <h2>Choose Your Advertising Plan</h2>
         <p class="lede">Flexible options designed to maximize your park's exposure to qualified buyers nationwide.</p>
       </div>
-      <div class="plans-grid" id="plansGrid" data-reveal></div>
+      <div class="plans-grid" id="plansGrid" data-reveal-stagger></div>
       <p class="plans-note" data-reveal>All plans are month-to-month billing, cancel anytime. Level 1 requires a 3-month minimum.</p>
     </div>
   </section>
 
   <section class="section section-alt">
-    <div class="wrap trust-grid" data-reveal>
-      <div class="trust-item">
-        <div class="trust-icon">18+</div>
-        <h3>Years Experience</h3>
-        <p>Trusted industry leader since 2006</p>
-      </div>
-      <div class="trust-item">
-        <div class="trust-icon">🇺🇸</div>
-        <h3>Nationwide Buyer Network</h3>
-        <p>Thousands of qualified buyers across the USA</p>
-      </div>
-      <div class="trust-item">
-        <div class="trust-icon">★</div>
-        <h3>Exclusive RV Park Specialists</h3>
-        <p>Focused expertise in RV park transactions</p>
+    <div class="wrap">
+      <div class="bento-grid" data-reveal-stagger>
+        <div class="bento-item bento-big">
+          <div class="bento-number"><span data-count-to="18" data-count-suffix="+">0+</span></div>
+          <h3>Years Experience</h3>
+          <p>Trusted industry leader since 2006 — we've helped hundreds of owners sell with confidence.</p>
+        </div>
+        <div class="bento-item">
+          <div class="bento-icon">🇺🇸</div>
+          <h3>Nationwide Network</h3>
+          <p>Thousands of qualified buyers across the USA.</p>
+        </div>
+        <div class="bento-item">
+          <div class="bento-icon">★</div>
+          <h3>RV Park Specialists</h3>
+          <p>Focused expertise in RV park transactions — not generalists.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -70,40 +117,40 @@
         <h2>Frequently Asked Seller Questions</h2>
         <p class="lede">Everything you need to know about listing timelines, contract flexibility, and cancellation policies.</p>
       </div>
-      <div class="faq-list" data-reveal>
+      <div class="faq-list" data-reveal-stagger>
         <details class="faq-item">
-          <summary>How long does it take for my RV park listing to go live?</summary>
+          <summary><span class="faq-num">01</span>How long does it take for my RV park listing to go live?<span class="faq-toggle">+</span></summary>
           <p>Most listings go live within one business day of completing your park details after checkout.</p>
         </details>
         <details class="faq-item">
-          <summary>What contract terms or minimum commitments are required?</summary>
+          <summary><span class="faq-num">02</span>What contract terms or minimum commitments are required?<span class="faq-toggle">+</span></summary>
           <p>Level 1 requires a 3-month minimum. Levels 2 and 3 are month-to-month with no long-term contract.</p>
         </details>
         <details class="faq-item">
-          <summary>What is your cancellation policy?</summary>
+          <summary><span class="faq-num">03</span>What is your cancellation policy?<span class="faq-toggle">+</span></summary>
           <p>Cancel anytime after your minimum term (if any) — just contact us and we'll take your listing down.</p>
         </details>
         <details class="faq-item">
-          <summary>How are buyer inquiries handled and delivered?</summary>
+          <summary><span class="faq-num">04</span>How are buyer inquiries handled and delivered?<span class="faq-toggle">+</span></summary>
           <p>Inquiries are forwarded straight to the email and phone number you provide when you complete your listing.</p>
         </details>
         <details class="faq-item">
-          <summary>Can I upgrade or downgrade my plan after getting started?</summary>
+          <summary><span class="faq-num">05</span>Can I upgrade or downgrade my plan after getting started?<span class="faq-toggle">+</span></summary>
           <p>Yes — reach out any time and we'll adjust your plan for the next billing cycle.</p>
         </details>
         <details class="faq-item">
-          <summary>Do you assist with financial documentation and NDA management?</summary>
+          <summary><span class="faq-num">06</span>Do you assist with financial documentation and NDA management?<span class="faq-toggle">+</span></summary>
           <p>Yes, our team can help coordinate NDAs and financial document sharing with serious buyers on request.</p>
         </details>
       </div>
     </div>
   </section>
 
-  <section class="section section-alt cta-band">
-    <div class="wrap" data-reveal>
+  <section class="section cta-band">
+    <div class="wrap cta-band-inner" data-reveal>
       <h2>Have Questions About Our Plans?</h2>
       <p class="lede">Our team is here to help you choose the right advertising solution for your RV park.</p>
-      <a href="https://www.rvparksales.com/contact/" class="btn btn-primary"><span>Talk to a Specialist</span></a>
+      <a href="https://www.rvparksales.com/contact/" class="btn btn-white btn-lg"><span>Talk to a Specialist</span></a>
     </div>
   </section>
 

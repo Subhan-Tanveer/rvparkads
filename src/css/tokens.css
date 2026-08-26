@@ -18,6 +18,9 @@
   --blue-dark: #1f86b0;
   --blue-light: #e8f6fc;
   --teal: #1f9d7c;
+  --orange: #e08a2e;
+  --orange-light: #fdf0e2;
+  --gradient-brand: linear-gradient(120deg, var(--blue), var(--teal));
 
   --border: #e2e8ec;
   --border-strong: #cfd9df;
@@ -80,10 +83,11 @@ button { font-family: inherit; cursor: pointer; }
 
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-1); padding: 15px 30px; border-radius: var(--radius-pill); font-size: 0.9375rem; font-weight: 700; border: 1px solid transparent; transition: transform 0.25s var(--ease-out), box-shadow 0.25s ease, background 0.2s ease; white-space: nowrap; }
 .btn-primary { background: var(--blue); color: var(--white); box-shadow: 0 8px 22px -8px rgba(46, 168, 216, 0.55); }
-.btn-primary:hover { background: var(--blue-dark); box-shadow: 0 12px 28px -8px rgba(46, 168, 216, 0.7); }
+.btn-primary:hover { background: var(--blue-dark); box-shadow: 0 14px 32px -8px rgba(46, 168, 216, 0.75); transform: translateY(-2px); }
+.btn-primary:active { transform: translateY(0); }
 .btn-ghost { background: var(--white); color: var(--navy); border-color: var(--border-strong); }
-.btn-ghost:hover { border-color: var(--blue); color: var(--blue-dark); }
-.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-ghost:hover { border-color: var(--blue); color: var(--blue-dark); transform: translateY(-2px); box-shadow: 0 10px 22px -12px rgba(18, 32, 44, 0.3); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; }
 
 .section { padding: var(--sp-10) 0; }
 @media (max-width: 900px) { .section { padding: var(--sp-8) 0; } }
@@ -91,8 +95,10 @@ button { font-family: inherit; cursor: pointer; }
 .section-head { max-width: 640px; margin: 0 auto var(--sp-6); text-align: center; }
 .section-head h2 { font-size: clamp(1.75rem, 3.5vw, 2.5rem); margin-top: var(--sp-2); }
 
-[data-reveal] { opacity: 0; transform: translateY(24px); transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out); }
-[data-reveal].is-visible { opacity: 1; transform: translateY(0); }
+/* Initial hidden state so content doesn't flash visible before GSAP
+   (src/js/core.js) animates it in on scroll. GSAP sets its own inline
+   opacity/transform once it runs, superseding these. */
+[data-reveal], [data-reveal-stagger] > *, [data-hero-in] { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
-  [data-reveal] { transition: none !important; opacity: 1 !important; transform: none !important; }
+  [data-reveal], [data-reveal-stagger] > *, [data-hero-in] { opacity: 1 !important; transform: none !important; }
 }

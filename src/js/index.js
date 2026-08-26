@@ -1,7 +1,6 @@
-import { initReveal } from './core.js';
+import { initPage } from './core.js';
 import { PLANS, formatUsd } from './plans-data.js';
-
-initReveal();
+import { gsap } from 'gsap';
 
 const grid = document.getElementById('plansGrid');
 
@@ -25,6 +24,32 @@ function planCard(plan) {
 
 PLANS.forEach((plan) => grid.appendChild(planCard(plan)));
 
+initPage();
+
+fetch('/api/account').then((res) => {
+  if (!res.ok) return;
+  const link = document.getElementById('accountLink');
+  link.textContent = 'My Account';
+  link.href = 'dashboard.html';
+}).catch(() => {});
+
+// Subtle 3D tilt on pricing cards, following the pointer — skipped
+// entirely on touch devices where there's no hover to react to.
+if (window.matchMedia('(hover: hover)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  grid.querySelectorAll('.plan-card').forEach((card) => {
+    const rotateX = gsap.quickTo(card, 'rotateX', { duration: 0.4, ease: 'power2.out' });
+    const rotateY = gsap.quickTo(card, 'rotateY', { duration: 0.4, ease: 'power2.out' });
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width - 0.5;
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+      rotateY(px * 8);
+      rotateX(py * -8);
+    });
+    card.addEventListener('mouseleave', () => { rotateX(0); rotateY(0); });
+  });
+}
+
 grid.addEventListener('click', async (e) => {
   const btn = e.target.closest('button[data-plan]');
   if (!btn) return;
@@ -39,6 +64,10 @@ grid.addEventListener('click', async (e) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ plan: planKey }),
     });
+    if (res.status === 401) {
+      window.location.href = `login.html?plan=${encodeURIComponent(planKey)}`;
+      return;
+    }
     const data = await res.json();
     if (!res.ok || !data.url) throw new Error(data.error || 'Could not start checkout');
     window.location.href = data.url;

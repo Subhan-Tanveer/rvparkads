@@ -1,7 +1,7 @@
-import { initReveal } from './core.js';
+import { initPage } from './core.js';
 import { upload } from '@vercel/blob/client';
 
-initReveal();
+initPage();
 
 const params = new URLSearchParams(window.location.search);
 const sessionId = params.get('session_id');
@@ -31,6 +31,10 @@ async function init() {
 
   try {
     const res = await fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`);
+    if (res.status === 401) {
+      window.location.href = 'login.html';
+      return;
+    }
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Could not verify your payment');
 
@@ -42,7 +46,6 @@ async function init() {
       return;
     }
 
-    if (data.email) document.getElementById('email').value = data.email;
     planLabel.textContent = `Payment Confirmed — ${PLAN_LABELS[data.planKey] || 'Your Plan'}`;
 
     loadingState.style.display = 'none';
@@ -106,6 +109,10 @@ form.addEventListener('submit', async (e) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...data, amenities, features, sessionId, photoUrls: uploadedPhotos }),
     });
+    if (res.status === 401) {
+      window.location.href = 'login.html';
+      return;
+    }
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || 'Could not submit your listing');
 

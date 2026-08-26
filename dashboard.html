@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Account — RVParkAds.com</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a href="index.html" class="logo">RVPark<span>Ads</span>.com</a>
+      <button type="button" class="btn btn-ghost btn-sm" id="logoutBtn"><span>Log Out</span></button>
+    </div>
+  </header>
+
+  <div id="loadingState" class="listing-status">
+    <p class="lede">Loading your account…</p>
+  </div>
+
+  <main class="listing-shell" id="dashboardShell" style="display:none;">
+    <div class="section-head" style="text-align:left; margin-bottom:24px;">
+      <p class="eyebrow">My Account</p>
+      <h2 id="welcomeHeading">Welcome back</h2>
+    </div>
+
+    <div class="dash-card">
+      <h3>Profile</h3>
+      <div class="dash-row"><span>Name</span><strong id="profName"></strong></div>
+      <div class="dash-row"><span>Email</span><strong id="profEmail"></strong></div>
+      <div class="dash-row"><span>Phone</span><strong id="profPhone"></strong></div>
+    </div>
+
+    <div class="dash-card" id="planCard">
+      <h3>Your Plan</h3>
+      <div id="planContent"></div>
+    </div>
+
+    <div class="dash-card" id="listingCard" style="display:none;">
+      <h3>Your Listing</h3>
+      <div id="listingContent"></div>
+    </div>
+
+    <div class="dash-card" id="noListingCard" style="display:none;">
+      <h3>Your Listing</h3>
+      <p class="lede">You haven't finished submitting your park's details yet.</p>
+      <a href="index.html#plans" class="btn btn-primary btn-sm"><span>Choose a Plan</span></a>
+    </div>
+  </main>
+
+  <script type="module" src="/src/js/dashboard.js"></script>
+</body>
+</html>
