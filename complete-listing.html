@@ -139,12 +139,21 @@
         </div>
 
         <div class="form-field full">
-          <label>Photos <span class="hint">(optional, up to 15)</span></label>
+          <label id="photosLabel">Photos <span class="hint">(optional)</span></label>
           <div class="file-drop">
             <input type="file" id="photoInput" accept="image/*" multiple style="margin-bottom:8px;">
             <p>JPEG, PNG, WebP, or GIF — up to 8MB each</p>
           </div>
           <div class="file-preview-grid" id="photoPreview"></div>
+        </div>
+
+        <div class="form-field full" id="videoField" style="display:none;">
+          <label id="videosLabel">Videos <span class="hint">(optional)</span></label>
+          <div class="file-drop">
+            <input type="file" id="videoInput" accept="video/*" multiple style="margin-bottom:8px;">
+            <p>MP4, MOV, or WebM — up to 200MB each</p>
+          </div>
+          <div class="file-preview-grid" id="videoPreview"></div>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 // Three advertising tiers for sellers listing their RV park for sale by
-// owner. Keep in sync with api/create-checkout-session.js — that runs in a
-// separate Node runtime and can't import this browser-side module.
+// owner. Keep in sync with api/_lib/plans.js — that runs in a separate
+// Node runtime and can't import this browser-side module.
 export const PLANS = [
   {
     key: 'level1',
@@ -8,10 +8,13 @@ export const PLANS = [
     tagline: 'Basic listing on RVParkSales.com',
     monthly: 9900,
     minMonths: 3,
+    maxPhotos: 6,
+    maxVideos: 0,
     features: [
       'Basic listing on RVParkSales.com',
       'Featured in buyer search results',
       'Email inquiry forwarding',
+      'Up to 6 photos',
     ],
   },
   {
@@ -22,10 +25,12 @@ export const PLANS = [
     featured: true,
     badgeLabel: 'Most Popular',
     includesPrior: 'Everything in Level 1',
+    maxPhotos: 10,
+    maxVideos: 1,
     features: [
       'Social media promotion',
       'Facebook & Instagram push',
-      'Enhanced listing with more photos',
+      'Up to 10 photos + 1 video',
       'Priority placement in search results',
     ],
   },
@@ -35,8 +40,10 @@ export const PLANS = [
     tagline: 'Listing + social + video content, 30-day dedicated campaign',
     monthly: 49900,
     includesPrior: 'Everything in Level 2',
+    maxPhotos: 15,
+    maxVideos: 2,
     features: [
-      'Professional video content',
+      'Up to 15 photos + 2 videos',
       '30-day dedicated marketing campaign',
       'Direct buyer outreach',
       'Weekly performance report',

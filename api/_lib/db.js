@@ -76,8 +76,10 @@ export async function ensureSchema() {
       owner_financing BOOLEAN NOT NULL DEFAULT false,
       description TEXT,
       photo_urls TEXT[],
+      video_urls TEXT[],
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    ALTER TABLE ads_listings ADD COLUMN IF NOT EXISTS video_urls TEXT[];
   `);
   return schemaReady;
 }

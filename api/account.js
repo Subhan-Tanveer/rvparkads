@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     const plan = seller.planKey ? PLANS[seller.planKey] : null;
     return res.status(200).json({
       seller: { firstName: seller.firstName, lastName: seller.lastName, email: seller.email, phone: seller.phone, isAdmin: seller.isAdmin },
-      plan: plan ? { key: seller.planKey, name: plan.name, monthly: plan.monthly } : null,
+      plan: plan ? { key: seller.planKey, name: plan.name, monthly: plan.monthly, maxPhotos: plan.maxPhotos, maxVideos: plan.maxVideos } : null,
       subscription,
       listing: listing ? {
         id: listing.id,

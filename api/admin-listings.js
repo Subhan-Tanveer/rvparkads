@@ -40,6 +40,7 @@ function mapListing(row) {
     communityActivities: row.community_activities,
     description: row.description,
     photoUrls: row.photo_urls || [],
+    videoUrls: row.video_urls || [],
     createdAt: row.created_at,
   };
 }

@@ -101,7 +101,14 @@ async function init() {
   if (l.photoUrls.length) {
     document.getElementById('photosCard').style.display = 'block';
     document.getElementById('photosGrid').innerHTML = l.photoUrls
-      .map((url) => `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" alt="Park photo"></a>`)
+      .map((url) => `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" alt="Listing photo"></a>`)
+      .join('');
+  }
+
+  if (l.videoUrls.length) {
+    document.getElementById('videosCard').style.display = 'block';
+    document.getElementById('videosGrid').innerHTML = l.videoUrls
+      .map((url) => `<video src="${url}" controls style="width:100%; border-radius:8px; border:1px solid var(--border);"></video>`)
       .join('');
   }
 

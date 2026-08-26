@@ -8,6 +8,7 @@ import Stripe from 'stripe';
 import { ensureSchema, query } from './_lib/db.js';
 import { requireSession } from './_lib/auth.js';
 import { getSellerById, setSellerStripeInfo } from './_lib/sellers-store.js';
+import { PLANS } from './_lib/plans.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -48,9 +49,12 @@ export default async function handler(req, res) {
     await ensureSchema();
     const existing = await query('SELECT id FROM ads_listings WHERE order_id = $1', [sessionId]);
 
+    const plan = PLANS[planKey] || PLANS.level1;
     return res.status(200).json({
       paid: true,
       planKey,
+      maxPhotos: plan.maxPhotos,
+      maxVideos: plan.maxVideos,
       alreadyListed: existing.rows.length > 0,
     });
   } catch (err) {

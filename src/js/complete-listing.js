@@ -14,8 +14,6 @@ const planLabel = document.getElementById('planLabel');
 const form = document.getElementById('listingForm');
 const submitBtn = document.getElementById('submitBtn');
 const formAlert = document.getElementById('formAlert');
-const photoInput = document.getElementById('photoInput');
-const photoPreview = document.getElementById('photoPreview');
 
 const PLAN_LABELS = { level1: 'Level 1 — $99/month', level2: 'Level 2 — $299/month', level3: 'Level 3 — $499/month' };
 
@@ -26,8 +24,9 @@ function showError(message) {
   document.getElementById('errorMessage').textContent = message;
 }
 
-function showForm(planKeyLabel) {
+function showForm(planKeyLabel, maxPhotos, maxVideos) {
   planLabel.textContent = planKeyLabel;
+  applyMediaLimits(maxPhotos, maxVideos);
   loadingState.style.display = 'none';
   formShell.style.display = 'block';
 }
@@ -36,6 +35,24 @@ function showAlreadyListed() {
   loadingState.style.display = 'none';
   successState.style.display = 'block';
   document.getElementById('successMessage').textContent = "You've already submitted your listing's details — we'll be in touch shortly.";
+}
+
+// The plan being paid for caps how much media a listing can carry — shown
+// here as the real limit (not just "up to 15"), and the video field is
+// hidden entirely for Level 1, which doesn't include video at all.
+let currentMaxPhotos = 15;
+let currentMaxVideos = 0;
+function applyMediaLimits(maxPhotos, maxVideos) {
+  currentMaxPhotos = maxPhotos;
+  currentMaxVideos = maxVideos;
+  document.getElementById('photosLabel').innerHTML = `Photos <span class="hint">(optional, up to ${maxPhotos})</span>`;
+  const videoField = document.getElementById('videoField');
+  if (maxVideos > 0) {
+    videoField.style.display = 'block';
+    document.getElementById('videosLabel').innerHTML = `Videos <span class="hint">(optional, up to ${maxVideos})</span>`;
+  } else {
+    videoField.style.display = 'none';
+  }
 }
 
 // Two ways to land here: fresh from a Stripe redirect (?session_id=...,
@@ -59,7 +76,7 @@ async function init() {
       if (!res.ok) throw new Error(data.error || 'Could not verify your payment');
       if (!data.paid) return showError("We couldn't confirm your payment yet. If you just paid, wait a moment and refresh this page.");
       if (data.alreadyListed) return showAlreadyListed();
-      showForm(`Payment Confirmed — ${PLAN_LABELS[data.planKey] || 'Your Plan'}`);
+      showForm(`Payment Confirmed — ${PLAN_LABELS[data.planKey] || 'Your Plan'}`, data.maxPhotos, data.maxVideos);
     } catch (err) {
       showError(err.message);
     }
@@ -67,7 +84,7 @@ async function init() {
   }
 
   if (!account.plan) return showError('Choose a plan first to start your listing.');
-  showForm(PLAN_LABELS[account.plan.key] || account.plan.name);
+  showForm(PLAN_LABELS[account.plan.key] || account.plan.name, account.plan.maxPhotos, account.plan.maxVideos);
 }
 
 init();
@@ -92,41 +109,60 @@ form.querySelectorAll('input[name="category"]').forEach((el) => {
 });
 applyCategory('park');
 
-let uploadedPhotos = [];
-
-photoInput.addEventListener('change', async () => {
-  const files = Array.from(photoInput.files || []);
-  if (!files.length) return;
-  if (uploadedPhotos.length + files.length > 15) {
-    alert('You can upload up to 15 photos total.');
-    return;
-  }
-
-  for (const file of files) {
-    const placeholder = document.createElement('div');
-    placeholder.style.cssText = 'aspect-ratio:1; border-radius:8px; background:#eef2f5; display:flex; align-items:center; justify-content:center; font-size:0.75rem; color:#5b6b78;';
-    placeholder.textContent = 'Uploading…';
-    photoPreview.appendChild(placeholder);
-
-    try {
-      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
-      const blob = await upload(`listings/${Date.now()}-${safeName}`, file, {
-        access: 'public',
-        handleUploadUrl: '/api/upload-token',
-        clientPayload: JSON.stringify({ sessionId, count: uploadedPhotos.length + 1 }),
-      });
-      uploadedPhotos.push(blob.url);
-      const img = document.createElement('img');
-      img.src = blob.url;
-      placeholder.replaceWith(img);
-    } catch (err) {
-      console.error('Photo upload failed:', err.message);
-      placeholder.textContent = 'Failed';
-      placeholder.style.color = '#b3261e';
+// Shared uploader for both the photo and video pickers — same direct
+// browser -> Blob flow, just parameterized by media type so the server
+// (api/upload-token.js) knows which plan limit and content-type allowlist
+// to enforce.
+function setupMediaUpload({ inputEl, previewEl, mediaType, uploadedList, isVideo }) {
+  inputEl.addEventListener('change', async () => {
+    const files = Array.from(inputEl.files || []);
+    if (!files.length) return;
+    const max = isVideo ? currentMaxVideos : currentMaxPhotos;
+    if (uploadedList.length + files.length > max) {
+      alert(`Your plan allows up to ${max} ${mediaType}${max === 1 ? '' : 's'}.`);
+      inputEl.value = '';
+      return;
     }
-  }
-  photoInput.value = '';
-});
+
+    for (const file of files) {
+      const placeholder = document.createElement('div');
+      placeholder.style.cssText = 'aspect-ratio:1; border-radius:8px; background:#eef2f5; display:flex; align-items:center; justify-content:center; font-size:0.75rem; color:#5b6b78;';
+      placeholder.textContent = 'Uploading…';
+      previewEl.appendChild(placeholder);
+
+      try {
+        const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
+        const blob = await upload(`listings/${mediaType}s/${Date.now()}-${safeName}`, file, {
+          access: 'public',
+          handleUploadUrl: '/api/upload-token',
+          clientPayload: JSON.stringify({ sessionId, mediaType, count: uploadedList.length + 1 }),
+        });
+        uploadedList.push(blob.url);
+        if (isVideo) {
+          const video = document.createElement('video');
+          video.src = blob.url;
+          video.controls = true;
+          video.style.cssText = 'width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px;';
+          placeholder.replaceWith(video);
+        } else {
+          const img = document.createElement('img');
+          img.src = blob.url;
+          placeholder.replaceWith(img);
+        }
+      } catch (err) {
+        console.error(`${mediaType} upload failed:`, err.message);
+        placeholder.textContent = 'Failed';
+        placeholder.style.color = '#b3261e';
+      }
+    }
+    inputEl.value = '';
+  });
+}
+
+const uploadedPhotos = [];
+const uploadedVideos = [];
+setupMediaUpload({ inputEl: document.getElementById('photoInput'), previewEl: document.getElementById('photoPreview'), mediaType: 'photo', uploadedList: uploadedPhotos, isVideo: false });
+setupMediaUpload({ inputEl: document.getElementById('videoInput'), previewEl: document.getElementById('videoPreview'), mediaType: 'video', uploadedList: uploadedVideos, isVideo: true });
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -145,7 +181,7 @@ form.addEventListener('submit', async (e) => {
     const res = await fetch('/api/submit-listing', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, amenities, features, rentalTypes, ownerFinancing, expansionLand, sessionId, photoUrls: uploadedPhotos }),
+      body: JSON.stringify({ ...data, amenities, features, rentalTypes, ownerFinancing, expansionLand, sessionId, photoUrls: uploadedPhotos, videoUrls: uploadedVideos }),
     });
     if (res.status === 401) {
       window.location.href = 'login.html';
