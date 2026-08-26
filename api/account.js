@@ -42,8 +42,9 @@ export default async function handler(req, res) {
       subscription,
       listing: listing ? {
         id: listing.id,
-        parkName: listing.park_name,
-        parkAddress: listing.park_address,
+        category: listing.category,
+        listingName: listing.listing_name,
+        listingAddress: listing.listing_address,
         createdAt: listing.created_at,
       } : null,
     });

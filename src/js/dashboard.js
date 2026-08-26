@@ -73,7 +73,7 @@ async function renderAdminListings() {
   }
   document.getElementById('adminListingsList').innerHTML = data.listings.map((l) => `
     <a href="listing-detail.html?id=${l.id}" class="dash-row" style="text-decoration:none; cursor:pointer;">
-      <span>${l.parkName} — ${l.sellerName}</span>
+      <span>[${l.category === 'lot' ? 'Lot' : 'Park'}] ${l.listingName} — ${l.sellerName}</span>
       <strong>${l.planName.replace('RVParkAds.com — ', '')} &rarr;</strong>
     </a>
   `).join('');
@@ -106,8 +106,8 @@ async function init() {
       if (data.listing) {
         document.getElementById('listingCard').style.display = 'block';
         document.getElementById('listingContent').innerHTML = `
-          <div class="dash-row"><span>Park Name</span><strong>${data.listing.parkName}</strong></div>
-          <div class="dash-row"><span>Address</span><strong>${data.listing.parkAddress}</strong></div>
+          <div class="dash-row"><span>${data.listing.category === 'lot' ? 'Lot Name' : 'Park Name'}</span><strong>${data.listing.listingName}</strong></div>
+          <div class="dash-row"><span>Address</span><strong>${data.listing.listingAddress}</strong></div>
           <div class="dash-row"><span>Submitted</span><strong>${formatDate(data.listing.createdAt)}</strong></div>
         `;
         const link = document.createElement('a');
@@ -119,7 +119,7 @@ async function init() {
       } else if (data.plan) {
         const noListingCard = document.getElementById('noListingCard');
         noListingCard.style.display = 'block';
-        document.getElementById('noListingText').textContent = "You've paid for your plan — just add your park's details to finish your listing.";
+        document.getElementById('noListingText').textContent = "You've paid for your plan — just add your listing's details to finish it.";
         const btn = document.getElementById('noListingBtn');
         btn.href = 'complete-listing.html';
         btn.querySelector('span').textContent = 'Complete Your Listing';

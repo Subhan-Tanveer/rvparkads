@@ -30,72 +30,112 @@
   <main class="listing-shell" id="formShell" style="display:none;">
     <div class="section-head" style="text-align:left; margin-bottom:24px;">
       <p class="eyebrow" id="planLabel">Payment Confirmed</p>
-      <h2>Tell Us About Your Park</h2>
-      <p class="lede">You're all set — just add your park's details below and we'll get your listing live.</p>
+      <h2>Tell Us About Your Listing</h2>
+      <p class="lede">You're all set — just add your listing's details below and we'll get it live.</p>
     </div>
 
     <form id="listingForm">
       <div class="form-grid">
-        <div class="form-field full"><label for="parkName">Park Name *</label><input id="parkName" name="parkName" required></div>
-        <div class="form-field full"><label for="parkAddress">Park Address *</label><input id="parkAddress" name="parkAddress" required></div>
-
-        <div class="form-field"><label for="numSites">Number of Sites</label><input id="numSites" name="numSites" type="number" min="0"></div>
-        <div class="form-field"><label for="rvSpaces">RV Spaces</label><input id="rvSpaces" name="rvSpaces" type="number" min="0"></div>
-        <div class="form-field"><label for="fullHookupSpaces">Full Hook Up Spaces</label><input id="fullHookupSpaces" name="fullHookupSpaces" type="number" min="0"></div>
-        <div class="form-field"><label for="tentSpaces">Tent Sites</label><input id="tentSpaces" name="tentSpaces" type="number" min="0"></div>
-        <div class="form-field"><label for="cabins">Cabins</label><input id="cabins" name="cabins" type="number" min="0"></div>
-        <div class="form-field"><label for="yurts">Yurts</label><input id="yurts" name="yurts" type="number" min="0"></div>
-
         <div class="form-field full">
-          <label>Rental Type <span class="hint">(optional — select all that apply)</span></label>
-          <div class="checkbox-grid">
-            <label class="checkbox-item"><input type="checkbox" name="rentalTypes" value="Nightly"> Nightly</label>
-            <label class="checkbox-item"><input type="checkbox" name="rentalTypes" value="Weekly"> Weekly</label>
-            <label class="checkbox-item"><input type="checkbox" name="rentalTypes" value="Monthly"> Monthly</label>
+          <label>Listing Type *</label>
+          <div class="checkbox-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <label class="checkbox-item"><input type="radio" name="category" value="park" checked> RV Park <span class="hint">(a whole park for sale)</span></label>
+            <label class="checkbox-item"><input type="radio" name="category" value="lot"> RV Lot <span class="hint">(a single lot in an exclusive community)</span></label>
+          </div>
+        </div>
+
+        <div class="form-field full"><label for="listingName" id="listingNameLabel">Park Name *</label><input id="listingName" name="listingName" required></div>
+        <div class="form-field full"><label for="listingAddress" id="listingAddressLabel">Park Address *</label><input id="listingAddress" name="listingAddress" required></div>
+
+        <div id="parkFields" style="display:contents;">
+          <div class="form-field"><label for="numSites">Number of Sites</label><input id="numSites" name="numSites" type="number" min="0"></div>
+          <div class="form-field"><label for="rvSpaces">RV Spaces</label><input id="rvSpaces" name="rvSpaces" type="number" min="0"></div>
+          <div class="form-field"><label for="fullHookupSpaces">Full Hook Up Spaces</label><input id="fullHookupSpaces" name="fullHookupSpaces" type="number" min="0"></div>
+          <div class="form-field"><label for="tentSpaces">Tent Sites</label><input id="tentSpaces" name="tentSpaces" type="number" min="0"></div>
+          <div class="form-field"><label for="cabins">Cabins</label><input id="cabins" name="cabins" type="number" min="0"></div>
+          <div class="form-field"><label for="yurts">Yurts</label><input id="yurts" name="yurts" type="number" min="0"></div>
+
+          <div class="form-field full">
+            <label>Rental Type <span class="hint">(optional — select all that apply)</span></label>
+            <div class="checkbox-grid">
+              <label class="checkbox-item"><input type="checkbox" name="rentalTypes" value="Nightly"> Nightly</label>
+              <label class="checkbox-item"><input type="checkbox" name="rentalTypes" value="Weekly"> Weekly</label>
+              <label class="checkbox-item"><input type="checkbox" name="rentalTypes" value="Monthly"> Monthly</label>
+            </div>
+          </div>
+
+          <div class="form-field"><label for="annualRevenue">Annual Revenue (USD)<span class="hint"> — optional</span></label><input id="annualRevenue" name="annualRevenue" type="number" min="0" step="1000" placeholder="e.g. 320000"></div>
+          <div class="form-field"><label for="occupancyRate">Occupancy Rate (%)<span class="hint"> — optional</span></label><input id="occupancyRate" name="occupancyRate" type="number" min="0" max="100" step="1"></div>
+          <div class="form-field"><label for="reservationSystem">Reservation System Used<span class="hint"> — optional</span></label><input id="reservationSystem" name="reservationSystem"></div>
+
+          <div class="form-field full">
+            <label>Amenities <span class="hint">(optional)</span></label>
+            <div class="checkbox-grid">
+              <label class="checkbox-item"><input type="checkbox" name="amenities" value="Office"> Office</label>
+              <label class="checkbox-item"><input type="checkbox" name="amenities" value="Clubhouse"> Clubhouse</label>
+              <label class="checkbox-item"><input type="checkbox" name="amenities" value="Laundry / Bath House"> Laundry / Bath House</label>
+              <label class="checkbox-item"><input type="checkbox" name="amenities" value="30 Amp"> 30 Amp</label>
+              <label class="checkbox-item"><input type="checkbox" name="amenities" value="50 Amp"> 50 Amp</label>
+              <label class="checkbox-item"><input type="checkbox" name="amenities" value="Dog Park"> Dog Park</label>
+            </div>
+          </div>
+
+          <div class="form-field full">
+            <label>Park Features <span class="hint">(optional)</span></label>
+            <div class="checkbox-grid">
+              <label class="checkbox-item"><input type="checkbox" name="features" value="Waterfront / River / Lake / Ocean"> Waterfront / River / Lake / Ocean</label>
+              <label class="checkbox-item"><input type="checkbox" name="features" value="Near Major Interstate or State Highway"> Near Major Interstate or State Highway</label>
+              <label class="checkbox-item"><input type="checkbox" name="features" value="Pool"> Pool</label>
+              <label class="checkbox-item"><input type="checkbox" name="features" value="Rec Room"> Rec Room</label>
+              <label class="checkbox-item"><input type="checkbox" name="features" value="Playground / Games Area"> Playground / Games Area</label>
+              <label class="checkbox-item"><input type="checkbox" name="features" value="Picnic Area"> Picnic Area</label>
+              <label class="checkbox-item"><input type="checkbox" name="features" value="Fire Pits"> Fire Pits</label>
+            </div>
+          </div>
+
+          <div class="form-field full">
+            <label>Seller Considerations <span class="hint">(optional)</span></label>
+            <div class="checkbox-grid">
+              <label class="checkbox-item"><input type="checkbox" id="ownerFinancingPark" name="ownerFinancing"> Owner financing considered</label>
+              <label class="checkbox-item"><input type="checkbox" id="expansionLand" name="expansionLand"> Extra land available for expansion</label>
+            </div>
+          </div>
+        </div>
+
+        <div id="lotFields" style="display:none;">
+          <div class="form-field"><label for="lotSize">Lot Size<span class="hint"> — optional</span></label><input id="lotSize" name="lotSize" placeholder="e.g. 40ft x 60ft or 2,400 sq ft"></div>
+          <div class="form-field"><label for="hoaFees">HOA Fees (USD/month)<span class="hint"> — optional</span></label><input id="hoaFees" name="hoaFees" type="number" min="0" step="1"></div>
+
+          <div class="form-field full">
+            <label>Amenities <span class="hint">(optional)</span></label>
+            <div class="checkbox-grid">
+              <label class="checkbox-item"><input type="checkbox" name="amenities" value="Storage Building"> Storage Building</label>
+              <label class="checkbox-item"><input type="checkbox" name="amenities" value="Laundry"> Laundry</label>
+              <label class="checkbox-item"><input type="checkbox" name="amenities" value="Pool"> Pool</label>
+              <label class="checkbox-item"><input type="checkbox" name="amenities" value="Pickleball Court"> Pickleball Court</label>
+              <label class="checkbox-item"><input type="checkbox" name="amenities" value="Bocce Ball"> Bocce Ball</label>
+              <label class="checkbox-item"><input type="checkbox" name="amenities" value="Tennis"> Tennis</label>
+            </div>
+          </div>
+
+          <div class="form-field full">
+            <label for="communityActivities">Community Activities<span class="hint"> — optional</span></label>
+            <textarea id="communityActivities" name="communityActivities" rows="3" placeholder="Describe the community's regular activities and events."></textarea>
+          </div>
+
+          <div class="form-field full">
+            <label>Seller Considerations <span class="hint">(optional)</span></label>
+            <div class="checkbox-grid">
+              <label class="checkbox-item"><input type="checkbox" id="ownerFinancingLot" name="ownerFinancing"> Owner financing considered</label>
+            </div>
           </div>
         </div>
 
         <div class="form-field"><label for="askingPrice">Asking Price (USD)<span class="hint"> — optional</span></label><input id="askingPrice" name="askingPrice" type="number" min="0" step="1000" placeholder="e.g. 1250000"></div>
-        <div class="form-field"><label for="annualRevenue">Annual Revenue (USD)<span class="hint"> — optional</span></label><input id="annualRevenue" name="annualRevenue" type="number" min="0" step="1000" placeholder="e.g. 320000"></div>
-        <div class="form-field"><label for="occupancyRate">Occupancy Rate (%)<span class="hint"> — optional</span></label><input id="occupancyRate" name="occupancyRate" type="number" min="0" max="100" step="1"></div>
-        <div class="form-field"><label for="reservationSystem">Reservation System Used<span class="hint"> — optional</span></label><input id="reservationSystem" name="reservationSystem"></div>
 
         <div class="form-field full">
-          <label>Amenities <span class="hint">(optional)</span></label>
-          <div class="checkbox-grid">
-            <label class="checkbox-item"><input type="checkbox" name="amenities" value="Office"> Office</label>
-            <label class="checkbox-item"><input type="checkbox" name="amenities" value="Clubhouse"> Clubhouse</label>
-            <label class="checkbox-item"><input type="checkbox" name="amenities" value="Laundry / Bath House"> Laundry / Bath House</label>
-            <label class="checkbox-item"><input type="checkbox" name="amenities" value="30 Amp"> 30 Amp</label>
-            <label class="checkbox-item"><input type="checkbox" name="amenities" value="50 Amp"> 50 Amp</label>
-            <label class="checkbox-item"><input type="checkbox" name="amenities" value="Dog Park"> Dog Park</label>
-          </div>
-        </div>
-
-        <div class="form-field full">
-          <label>Park Features <span class="hint">(optional)</span></label>
-          <div class="checkbox-grid">
-            <label class="checkbox-item"><input type="checkbox" name="features" value="Waterfront / River / Lake / Ocean"> Waterfront / River / Lake / Ocean</label>
-            <label class="checkbox-item"><input type="checkbox" name="features" value="Near Major Interstate or State Highway"> Near Major Interstate or State Highway</label>
-            <label class="checkbox-item"><input type="checkbox" name="features" value="Pool"> Pool</label>
-            <label class="checkbox-item"><input type="checkbox" name="features" value="Rec Room"> Rec Room</label>
-            <label class="checkbox-item"><input type="checkbox" name="features" value="Playground / Games Area"> Playground / Games Area</label>
-            <label class="checkbox-item"><input type="checkbox" name="features" value="Picnic Area"> Picnic Area</label>
-            <label class="checkbox-item"><input type="checkbox" name="features" value="Fire Pits"> Fire Pits</label>
-          </div>
-        </div>
-
-        <div class="form-field full">
-          <label>Seller Considerations <span class="hint">(optional)</span></label>
-          <div class="checkbox-grid">
-            <label class="checkbox-item"><input type="checkbox" id="ownerFinancing" name="ownerFinancing"> Owner financing considered</label>
-            <label class="checkbox-item"><input type="checkbox" id="expansionLand" name="expansionLand"> Extra land available for expansion</label>
-          </div>
-        </div>
-
-        <div class="form-field full">
-          <label for="description">Park Description <span class="hint">(optional)</span></label>
-          <textarea id="description" name="description" rows="4" placeholder="Tell buyers what makes this park worth owning."></textarea>
+          <label for="description" id="descriptionLabel">Park Description <span class="hint">(optional)</span></label>
+          <textarea id="description" name="description" rows="4" placeholder="Tell buyers what makes this listing worth owning."></textarea>
         </div>
 
         <div class="form-field full">

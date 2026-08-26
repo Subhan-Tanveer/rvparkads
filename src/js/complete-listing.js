@@ -35,7 +35,7 @@ function showForm(planKeyLabel) {
 function showAlreadyListed() {
   loadingState.style.display = 'none';
   successState.style.display = 'block';
-  document.getElementById('successMessage').textContent = "You've already submitted your park's details — we'll be in touch shortly.";
+  document.getElementById('successMessage').textContent = "You've already submitted your listing's details — we'll be in touch shortly.";
 }
 
 // Two ways to land here: fresh from a Stripe redirect (?session_id=...,
@@ -71,6 +71,26 @@ async function init() {
 }
 
 init();
+
+// Toggles which field group shows (park vs lot) and swaps the labels that
+// read as one or the other — both groups share the same underlying
+// `listingName`/`listingAddress`/`amenities`/`ownerFinancing` field names,
+// so nothing needs remapping on submit beyond reading whichever inputs
+// are actually visible.
+const parkFields = document.getElementById('parkFields');
+const lotFields = document.getElementById('lotFields');
+function applyCategory(category) {
+  const isLot = category === 'lot';
+  parkFields.style.display = isLot ? 'none' : 'contents';
+  lotFields.style.display = isLot ? 'contents' : 'none';
+  document.getElementById('listingNameLabel').textContent = isLot ? 'Lot Name *' : 'Park Name *';
+  document.getElementById('listingAddressLabel').textContent = isLot ? 'Lot Address *' : 'Park Address *';
+  document.getElementById('descriptionLabel').firstChild.textContent = isLot ? 'Lot Description ' : 'Park Description ';
+}
+form.querySelectorAll('input[name="category"]').forEach((el) => {
+  el.addEventListener('change', () => applyCategory(el.value));
+});
+applyCategory('park');
 
 let uploadedPhotos = [];
 
@@ -118,7 +138,7 @@ form.addEventListener('submit', async (e) => {
   const amenities = Array.from(form.querySelectorAll('input[name="amenities"]:checked')).map((el) => el.value);
   const features = Array.from(form.querySelectorAll('input[name="features"]:checked')).map((el) => el.value);
   const rentalTypes = Array.from(form.querySelectorAll('input[name="rentalTypes"]:checked')).map((el) => el.value);
-  const ownerFinancing = document.getElementById('ownerFinancing').checked;
+  const ownerFinancing = document.getElementById('ownerFinancingPark').checked || document.getElementById('ownerFinancingLot').checked;
   const expansionLand = document.getElementById('expansionLand').checked;
 
   try {
@@ -137,7 +157,7 @@ form.addEventListener('submit', async (e) => {
     formShell.style.display = 'none';
     successState.style.display = 'block';
     document.getElementById('successMessage').textContent =
-      "We've received your park's details and sent a confirmation to your email. Your listing will be live shortly.";
+      "We've received your listing's details and sent a confirmation to your email. Your listing will be live shortly.";
   } catch (err) {
     formAlert.textContent = err.message;
     formAlert.className = 'form-alert error is-visible';

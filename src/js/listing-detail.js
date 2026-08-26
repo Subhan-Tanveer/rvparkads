@@ -46,16 +46,22 @@ async function init() {
   if (!res.ok) return showError(data.error || 'Could not load this listing');
 
   const l = data.listing;
-  document.title = `${l.parkName} — RVParkAds.com`;
-  document.getElementById('planLabel').textContent = l.planName;
-  document.getElementById('parkNameHeading').textContent = l.parkName;
-  document.getElementById('parkAddressText').textContent = l.parkAddress;
+  const isLot = l.category === 'lot';
+  document.title = `${l.listingName} — RVParkAds.com`;
+  document.getElementById('planLabel').textContent = `${isLot ? 'RV Lot' : 'RV Park'} — ${l.planName}`;
+  document.getElementById('parkNameHeading').textContent = l.listingName;
+  document.getElementById('parkAddressText').textContent = l.listingAddress;
+  document.querySelector('#parkDetailRows').closest('.dash-card').querySelector('h3').textContent = isLot ? 'Lot Details' : 'Park Details';
 
   document.getElementById('dSellerName').textContent = l.sellerName;
   document.getElementById('dSellerEmail').textContent = l.sellerEmail;
   document.getElementById('dSellerPhone').textContent = l.sellerPhone;
 
-  document.getElementById('parkDetailRows').innerHTML = [
+  document.getElementById('parkDetailRows').innerHTML = (isLot ? [
+    row('Lot Size', l.lotSize),
+    row('HOA Fees', l.hoaFeesCents != null ? `${formatUsd(l.hoaFeesCents)}/month` : null),
+    row('Community Activities', l.communityActivities),
+  ] : [
     row('Number of Sites', l.numSites),
     row('RV Spaces', l.rvSpaces),
     row('Full Hook Up Spaces', l.fullHookupSpaces),
@@ -64,14 +70,14 @@ async function init() {
     row('Yurts', l.yurts),
     row('Rental Type', l.rentalTypes.length ? l.rentalTypes.join(', ') : null),
     row('Reservation System', l.reservationSystem),
-  ].join('') || '<p class="lede">No additional details provided.</p>';
+    row('Annual Revenue', formatUsd(l.annualRevenueCents)),
+    row('Occupancy Rate', l.occupancyRate != null ? `${l.occupancyRate}%` : null),
+    row('Extra Land for Expansion', l.expansionLand ? 'Yes' : 'No'),
+  ]).join('') || '<p class="lede">No additional details provided.</p>';
 
   const financialsHtml = [
     row('Asking Price', formatUsd(l.askingPriceCents)),
-    row('Annual Revenue', formatUsd(l.annualRevenueCents)),
-    row('Occupancy Rate', l.occupancyRate != null ? `${l.occupancyRate}%` : null),
     row('Owner Financing Considered', l.ownerFinancing ? 'Yes' : 'No'),
-    row('Extra Land for Expansion', l.expansionLand ? 'Yes' : 'No'),
   ].join('');
   if (financialsHtml) {
     document.getElementById('financialsCard').style.display = 'block';

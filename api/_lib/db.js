@@ -40,13 +40,20 @@ export async function ensureSchema() {
     );
     ALTER TABLE ads_sellers ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT false;
 
+    -- category: 'park' (a whole RV park for sale) or 'lot' (a single lot
+    -- for sale inside an exclusive RV lot community) — two genuinely
+    -- different listing types sharing the same seller/plan/payment flow,
+    -- distinguished here rather than as separate tables since they share
+    -- most columns (name, address, price, financing, description, photos).
     CREATE TABLE IF NOT EXISTS ads_listings (
       id SERIAL PRIMARY KEY,
       seller_id INTEGER NOT NULL UNIQUE REFERENCES ads_sellers(id),
       order_id TEXT,
       plan_key TEXT NOT NULL,
-      park_name TEXT NOT NULL,
-      park_address TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'park',
+      listing_name TEXT NOT NULL,
+      listing_address TEXT NOT NULL,
+      -- park-only fields
       num_sites TEXT,
       rv_spaces TEXT,
       full_hookup_spaces TEXT,
@@ -54,21 +61,23 @@ export async function ensureSchema() {
       cabins TEXT,
       yurts TEXT,
       rental_types TEXT[],
-      amenities TEXT[],
-      features TEXT[],
       reservation_system TEXT,
-      asking_price_cents INTEGER,
       annual_revenue_cents INTEGER,
       occupancy_rate NUMERIC,
-      owner_financing BOOLEAN NOT NULL DEFAULT false,
       expansion_land BOOLEAN NOT NULL DEFAULT false,
+      -- lot-only fields
+      lot_size TEXT,
+      hoa_fees_cents INTEGER,
+      community_activities TEXT,
+      -- shared fields
+      amenities TEXT[],
+      features TEXT[],
+      asking_price_cents INTEGER,
+      owner_financing BOOLEAN NOT NULL DEFAULT false,
       description TEXT,
       photo_urls TEXT[],
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
-    ALTER TABLE ads_listings ADD COLUMN IF NOT EXISTS full_hookup_spaces TEXT;
-    ALTER TABLE ads_listings ADD COLUMN IF NOT EXISTS owner_financing BOOLEAN NOT NULL DEFAULT false;
-    ALTER TABLE ads_listings ADD COLUMN IF NOT EXISTS expansion_land BOOLEAN NOT NULL DEFAULT false;
   `);
   return schemaReady;
 }
