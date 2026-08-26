@@ -78,7 +78,15 @@ export default async function handler(req, res) {
     );
 
     const sellerName = `${seller.firstName} ${seller.lastName}`;
+    const amenitiesList = Array.isArray(b.amenities) && b.amenities.length ? b.amenities.join(', ') : null;
+    const featuresList = Array.isArray(b.features) && b.features.length ? b.features.join(', ') : null;
+    const askingPriceFmt = b.askingPrice ? `$${Number(b.askingPrice).toLocaleString('en-US')}` : null;
+    const annualRevenueFmt = b.annualRevenue ? `$${Number(b.annualRevenue).toLocaleString('en-US')}` : null;
+    const occupancyFmt = b.occupancyRate ? `${b.occupancyRate}%` : null;
 
+    // Marie gets the full listing — every field the seller entered,
+    // grouped into sections so it's scannable at a glance instead of one
+    // long undifferentiated table.
     await sendEmail({
       to: 'marie@rvparksales.com',
       subject: `New listing submitted: ${b.parkName} (${plan.name})`,
@@ -86,23 +94,54 @@ export default async function handler(req, res) {
         eyebrow: 'New Paid Listing',
         title: `${b.parkName} — ${plan.name}`,
         intro: `${sellerName} just completed their listing after paying for ${plan.name} ($${(plan.monthly / 100).toFixed(0)}/month).`,
-        details: [
-          ['Seller', sellerName],
-          ['Email', seller.email],
-          ['Phone', seller.phone],
-          ['Park Name', b.parkName],
-          ['Park Address', b.parkAddress],
-          ['Plan', plan.name],
-          ['Number of Sites', b.numSites],
-          ['Rental Type', b.rentalType],
-          ['Asking Price', b.askingPrice ? `$${Number(b.askingPrice).toLocaleString('en-US')}` : null],
-          ['Annual Revenue', b.annualRevenue ? `$${Number(b.annualRevenue).toLocaleString('en-US')}` : null],
-          ['Occupancy Rate', b.occupancyRate ? `${b.occupancyRate}%` : null],
-          ['Photos Uploaded', String(photoUrls.length)],
+        sections: [
+          {
+            heading: 'Seller',
+            rows: [
+              ['Name', sellerName],
+              ['Email', seller.email],
+              ['Phone', seller.phone],
+              ['Plan', plan.name],
+            ],
+          },
+          {
+            heading: 'Park',
+            rows: [
+              ['Park Name', b.parkName],
+              ['Address', b.parkAddress],
+              ['Number of Sites', b.numSites],
+              ['RV Spaces', b.rvSpaces],
+              ['Tent Spaces', b.tentSpaces],
+              ['Cabins', b.cabins],
+              ['Yurts', b.yurts],
+              ['Rental Type', b.rentalType],
+              ['Reservation System', b.reservationSystem],
+            ],
+          },
+          {
+            heading: 'Financials',
+            rows: [
+              ['Asking Price', askingPriceFmt],
+              ['Annual Revenue', annualRevenueFmt],
+              ['Occupancy Rate', occupancyFmt],
+            ],
+          },
+          {
+            heading: 'Amenities & Features',
+            rows: [
+              ['Amenities', amenitiesList],
+              ['Features', featuresList],
+            ],
+          },
         ],
+        closing: b.description ? `Description: ${b.description}` : null,
+        photos: photoUrls,
+        cta: { label: 'View in Dashboard', href: 'https://rvparkads.vercel.app/dashboard.html' },
       }),
     });
 
+    // Seller gets a matching copy of everything they submitted — a record
+    // of exactly what's going live, not just a bare confirmation.
     await sendEmail({
       to: seller.email,
       subject: `You're listed! ${b.parkName} is now advertising on RVParkAds.com`,
@@ -110,11 +149,28 @@ export default async function handler(req, res) {
         eyebrow: 'Listing Submitted',
         title: `Thanks, ${seller.firstName}!`,
         intro: `We've received your ${plan.name} listing for ${b.parkName}. Our team will review it and it'll be live shortly. Buyer inquiries will be forwarded straight to ${seller.email} and ${seller.phone}.`,
-        details: [
-          ['Plan', plan.name],
-          ['Park Name', b.parkName],
-          ['Park Address', b.parkAddress],
+        sections: [
+          {
+            heading: 'Your Listing',
+            rows: [
+              ['Plan', plan.name],
+              ['Park Name', b.parkName],
+              ['Address', b.parkAddress],
+              ['Number of Sites', b.numSites],
+              ['RV Spaces', b.rvSpaces],
+              ['Tent Spaces', b.tentSpaces],
+              ['Cabins', b.cabins],
+              ['Yurts', b.yurts],
+              ['Rental Type', b.rentalType],
+              ['Asking Price', askingPriceFmt],
+              ['Annual Revenue', annualRevenueFmt],
+              ['Occupancy Rate', occupancyFmt],
+              ['Amenities', amenitiesList],
+              ['Features', featuresList],
+            ],
+          },
         ],
+        photos: photoUrls,
         cta: { label: 'View Your Account', href: 'https://rvparkads.vercel.app/dashboard.html' },
         closing: "Questions in the meantime? Just reply to this email or call us at (850) 832-0022.",
       }),
