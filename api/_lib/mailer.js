@@ -20,7 +20,7 @@ export async function sendEmail({ to, subject, html, text }) {
   const t = getTransporter();
   if (!t) throw new Error('Email is not configured (GMAIL_USER/GMAIL_APP_PASSWORD missing)');
   return t.sendMail({
-    from: `RVParkSelect.com <${process.env.GMAIL_USER}>`,
+    from: `RVParkAds.com <${process.env.GMAIL_USER}>`,
     to,
     subject,
     html,

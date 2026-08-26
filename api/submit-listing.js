@@ -99,7 +99,7 @@ export default async function handler(req, res) {
 
     await sendEmail({
       to: b.email,
-      subject: `You're listed! ${b.parkName} is now advertising on RVParkSelect.com`,
+      subject: `You're listed! ${b.parkName} is now advertising on RVParkAds.com`,
       html: renderEmail({
         eyebrow: 'Listing Submitted',
         title: `Thanks, ${b.firstName}!`,

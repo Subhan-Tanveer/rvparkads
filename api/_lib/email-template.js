@@ -1,4 +1,4 @@
-// Shared branded HTML email layout for RVParkSelect.com — light brokerage
+// Shared branded HTML email layout for RVParkAds.com — light brokerage
 // theme matching the site (white background, navy text, sky-blue accent),
 // mirroring the dark-themed layout used by rvparksuccess.com's
 // api/_lib/email-template.js but restyled for this brand. Table-based with
@@ -57,7 +57,7 @@ export function renderEmail({ eyebrow, title, intro, details = [], cta, closing 
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:${COLORS.white}; border-radius:16px; overflow:hidden; border:1px solid ${COLORS.border};">
 
         <tr><td style="padding:28px 32px; background-color:${COLORS.navy}; text-align:center;">
-          <p style="margin:0; font-family:Arial,Helvetica,sans-serif; font-weight:bold; font-size:18px; color:${COLORS.white};">RVPark<span style="color:#6fd3f5;">Select</span>.com</p>
+          <p style="margin:0; font-family:Arial,Helvetica,sans-serif; font-weight:bold; font-size:18px; color:${COLORS.white};">RVPark<span style="color:#6fd3f5;">Ads</span>.com</p>
         </td></tr>
 
         <tr><td style="padding:36px 32px 32px;">
@@ -72,7 +72,7 @@ export function renderEmail({ eyebrow, title, intro, details = [], cta, closing 
         </td></tr>
 
         <tr><td style="padding:20px 32px; background-color:${COLORS.paper}; text-align:center; border-top:1px solid ${COLORS.border};">
-          <p style="margin:0; font-family:Arial,Helvetica,sans-serif; font-size:12px; color:${COLORS.dim};">RVParkSelect.com — Advertise your RV park to thousands of qualified buyers.</p>
+          <p style="margin:0; font-family:Arial,Helvetica,sans-serif; font-size:12px; color:${COLORS.dim};">RVParkAds.com — Advertise your RV park to thousands of qualified buyers.</p>
         </td></tr>
 
       </table>
