@@ -59,25 +59,18 @@ function renderListingCard(listing) {
     alertEl.className = 'form-alert';
     select.disabled = true;
     try {
-      const res = await fetch('/api/account', {
+      // Plan changes go through a real Stripe Checkout redirect — same as
+      // paying for a brand-new listing — so the seller re-confirms their
+      // card on Stripe's own page and the plan only changes once that
+      // payment actually clears (handled in verify-session.js on return).
+      const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'change-plan', listingId: listing.id, newPlanKey }),
+        body: JSON.stringify({ plan: newPlanKey, listingId: listing.id }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not change plan');
-
-      if (data.needsTrim) {
-        window.location.href = `edit-listing.html?id=${listing.id}&downgradeTo=${newPlanKey}`;
-        return;
-      }
-      if (data.redirectTo) {
-        window.location.href = data.redirectTo;
-        return;
-      }
-      alertEl.textContent = 'Plan updated!';
-      alertEl.className = 'form-alert success is-visible';
-      setTimeout(() => window.location.reload(), 1000);
+      if (!res.ok) throw new Error(data.error || 'Could not start checkout');
+      window.location.href = data.url;
     } catch (err) {
       alertEl.textContent = err.message;
       alertEl.className = 'form-alert error is-visible';
@@ -163,6 +156,15 @@ async function init() {
       } else {
         data.listings.forEach((listing) => list.appendChild(renderListingCard(listing)));
       }
+    }
+
+    if (new URLSearchParams(window.location.search).get('planChangeCanceled')) {
+      const banner = document.createElement('p');
+      banner.className = 'form-alert error is-visible';
+      banner.style.marginBottom = '16px';
+      banner.textContent = 'Plan change canceled — your listing is unchanged.';
+      dashboardShell.prepend(banner);
+      window.history.replaceState({}, '', 'dashboard.html');
     }
 
     loadingState.style.display = 'none';

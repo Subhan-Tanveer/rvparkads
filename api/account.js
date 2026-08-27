@@ -1,16 +1,20 @@
 // GET /api/account — seller's profile + every listing they own, each with
 // its own live subscription status (fetched from Stripe, never a cached
 // DB column, so it can't drift from reality). POST /api/account handles
-// per-listing actions: cancel-subscription, change-plan (upgrade or
-// downgrade), confirm-downgrade (after trimming media to fit the new
-// plan's limits). Billing is per-listing, not per-account — a seller can
-// own several listings, each independently paid for and managed.
+// per-listing actions: cancel-subscription, confirm-downgrade (trimming
+// media after a downgrade Checkout that dropped below the seller's current
+// media count), update-media. Billing is per-listing, not per-account — a
+// seller can own several listings, each independently paid for and
+// managed. Actually CHANGING plans is a real Stripe Checkout redirect
+// (see api/create-checkout-session.js + api/verify-session.js), not
+// something this endpoint does directly — a plan only changes once the
+// seller has re-confirmed payment on Stripe's own page, never silently in
+// the background.
 import Stripe from 'stripe';
 import { requireSession } from './_lib/auth.js';
-import { getSellerById, getSellerListings, getListingById, setListingPlan, setListingMedia } from './_lib/sellers-store.js';
+import { getSellerById, getSellerListings, getListingById, setListingMedia } from './_lib/sellers-store.js';
 import { PLANS } from './_lib/plans.js';
-import { sendEmail } from './_lib/mailer.js';
-import { renderEmail } from './_lib/email-template.js';
+import { notifyPlanChange } from './_lib/plan-notify.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -20,27 +24,10 @@ function addMonths(date, months) {
   return d;
 }
 
-function planLabel(key) {
-  return (PLANS[key]?.name || key || '').replace('RVParkAds.com — ', '');
-}
-
-// Subscription ITEM updates only accept a real Price id — unlike Checkout
-// Sessions, `price_data` there doesn't take an inline `product_data`
-// (Stripe: "unknown parameter items[0][price_data][product_data]"). So a
-// fresh Price (and product) gets created on the fly for every plan
-// change — cheap, and normal Stripe practice; no need to dedupe/cache.
-async function createPlanPrice(plan) {
-  return stripe.prices.create({
-    currency: 'usd',
-    unit_amount: plan.monthly,
-    recurring: { interval: 'month' },
-    product_data: { name: plan.name },
-  });
-}
-
 // Level 1 has a real 3-month minimum commitment (see PLANS.level1.minMonths)
 // — computed from the subscription's actual first-payment date (Stripe's
-// start_date), not something the client can spoof.
+// start_date), not something the client can spoof. This lock only ever
+// blocks cancellation; upgrading or downgrading a plan is allowed anytime.
 async function getListingSubscription(listing) {
   if (!listing.stripe_subscription_id) return null;
   try {
@@ -83,55 +70,6 @@ async function requireOwnedListing(req, res, seller) {
   const listing = await getListingById(listingId);
   if (!listing || listing.seller_id !== seller.id) { res.status(404).json({ error: 'Listing not found' }); return null; }
   return listing;
-}
-
-async function notifyPlanChange({ listing, seller, fromKey, toKey, direction, trimmedPhotos = 0, trimmedVideos = 0 }) {
-  const sellerName = `${seller.firstName} ${seller.lastName}`;
-  const verb = direction === 'upgrade' ? 'upgraded' : 'downgraded';
-  const trimNote = trimmedPhotos || trimmedVideos
-    ? `To fit the new limits, ${[trimmedPhotos && `${trimmedPhotos} photo${trimmedPhotos === 1 ? '' : 's'}`, trimmedVideos && `${trimmedVideos} video${trimmedVideos === 1 ? '' : 's'}`].filter(Boolean).join(' and ')} were removed from the listing.`
-    : null;
-
-  await sendEmail({
-    to: 'marie@rvparksales.com',
-    subject: `Plan ${verb}: ${listing.listing_name} (${planLabel(fromKey)} → ${planLabel(toKey)})`,
-    html: renderEmail({
-      eyebrow: `Listing ${verb}`,
-      title: `${listing.listing_name} — ${planLabel(fromKey)} → ${planLabel(toKey)}`,
-      intro: `${sellerName} just ${verb} "${listing.listing_name}" from ${planLabel(fromKey)} to ${planLabel(toKey)}.`,
-      sections: [{
-        heading: 'Details',
-        rows: [
-          ['Seller', sellerName],
-          ['Email', seller.email],
-          ['Listing', listing.listing_name],
-          ['From', planLabel(fromKey)],
-          ['To', planLabel(toKey)],
-        ],
-      }],
-      closing: trimNote,
-      cta: { label: 'View Full Listing', href: `https://rvparkads.com/listing-detail.html?id=${listing.id}` },
-    }),
-  });
-
-  if (direction === 'downgrade') {
-    // Sellers get the upgrade confirmation implicitly (they're the one who
-    // triggered it and land straight on the edit page), but a downgrade —
-    // especially one that removed their own photos/videos — gets an
-    // explicit email so there's a record of exactly what happened.
-    await sendEmail({
-      to: seller.email,
-      subject: `Your plan for ${listing.listing_name} was changed to ${planLabel(toKey)}`,
-      html: renderEmail({
-        eyebrow: 'Plan Changed',
-        title: `${listing.listing_name} is now on ${planLabel(toKey)}`,
-        intro: `Your listing "${listing.listing_name}" has been moved from ${planLabel(fromKey)} to ${planLabel(toKey)}.`,
-        sections: [{ heading: 'Details', rows: [['From', planLabel(fromKey)], ['To', planLabel(toKey)]] }],
-        closing: trimNote || 'Questions about this change? Just reply to this email or call us at (850) 832-0022.',
-        cta: { label: 'View Your Account', href: 'https://rvparkads.com/dashboard.html' },
-      }),
-    });
-  }
 }
 
 export default async function handler(req, res) {
@@ -180,109 +118,42 @@ export default async function handler(req, res) {
       }
     }
 
-    if (action === 'change-plan') {
-      const listing = await requireOwnedListing(req, res, seller);
-      if (!listing) return;
-      const newPlanKey = req.body?.newPlanKey;
-      const newPlan = PLANS[newPlanKey];
-      if (!newPlan) return res.status(400).json({ error: 'Unknown plan' });
-      if (newPlanKey === listing.plan_key) return res.status(400).json({ error: 'Already on this plan' });
-      if (!listing.stripe_subscription_id) return res.status(400).json({ error: 'No active subscription on this listing' });
-
-      const currentPlan = PLANS[listing.plan_key];
-      const isUpgrade = newPlan.monthly > currentPlan.monthly;
-
-      if (!isUpgrade) {
-        const photoCount = (listing.photo_urls || []).length;
-        const videoCount = (listing.video_urls || []).length;
-        if (photoCount > newPlan.maxPhotos || videoCount > newPlan.maxVideos) {
-          // Can't downgrade yet — the seller has more media than the new
-          // plan allows. Send back what they have so the frontend can show
-          // a picker instead of just failing.
-          return res.status(200).json({
-            needsTrim: true,
-            maxPhotos: newPlan.maxPhotos,
-            maxVideos: newPlan.maxVideos,
-            photoUrls: listing.photo_urls || [],
-            videoUrls: listing.video_urls || [],
-          });
-        }
-      }
-
-      try {
-        const currentSub = await getListingSubscription(listing);
-        if (!currentSub?.itemId) return res.status(400).json({ error: 'Could not read current subscription' });
-        const newPrice = await createPlanPrice(newPlan);
-        // always_invoice + error_if_incomplete charges the prorated amount
-        // immediately and rejects the whole update (throws here) if payment
-        // fails — the plan only actually changes once they've paid for it.
-        await stripe.subscriptions.update(listing.stripe_subscription_id, {
-          items: [{ id: currentSub.itemId, price: newPrice.id }],
-          proration_behavior: 'always_invoice',
-          payment_behavior: 'error_if_incomplete',
-        });
-        await setListingPlan(listing.id, { planKey: newPlanKey, subscriptionId: listing.stripe_subscription_id });
-        await notifyPlanChange({ listing, seller, fromKey: listing.plan_key, toKey: newPlanKey, direction: isUpgrade ? 'upgrade' : 'downgrade' });
-        return res.status(200).json({
-          ok: true,
-          redirectTo: isUpgrade ? `edit-listing.html?id=${listing.id}` : null,
-        });
-      } catch (err) {
-        console.error('Change plan error:', err.message);
-        const message = err.code === 'card_declined' || err.type === 'StripeCardError'
-          ? 'Your payment method was declined. Please update your card and try again.'
-          : 'Could not change your plan. Please try again or contact us.';
-        return res.status(400).json({ error: message });
-      }
-    }
-
+    // Reached from edit-listing.html's forced-trim screen after a downgrade
+    // Checkout has ALREADY completed (verify-session.js applied the new
+    // plan_key the moment payment cleared) — this step only picks which
+    // existing photos/videos survive the new plan's limits. No Stripe call
+    // here; the money already moved.
     if (action === 'confirm-downgrade') {
       const listing = await requireOwnedListing(req, res, seller);
       if (!listing) return;
-      const newPlanKey = req.body?.newPlanKey;
-      const newPlan = PLANS[newPlanKey];
-      if (!newPlan) return res.status(400).json({ error: 'Unknown plan' });
+      const plan = PLANS[listing.plan_key];
+      if (!plan) return res.status(400).json({ error: 'Unknown plan' });
       const keepPhotoUrls = Array.isArray(req.body?.keepPhotoUrls) ? req.body.keepPhotoUrls : [];
       const keepVideoUrls = Array.isArray(req.body?.keepVideoUrls) ? req.body.keepVideoUrls : [];
 
       // Trust nothing from the client except which of the listing's OWN
       // existing media to keep — validate every url is actually theirs,
-      // and that the trimmed counts genuinely fit the new plan.
+      // and that the trimmed counts genuinely fit the current plan.
       const ownedPhotos = new Set(listing.photo_urls || []);
       const ownedVideos = new Set(listing.video_urls || []);
       const validPhotos = keepPhotoUrls.filter((u) => ownedPhotos.has(u));
       const validVideos = keepVideoUrls.filter((u) => ownedVideos.has(u));
-      if (validPhotos.length > newPlan.maxPhotos || validVideos.length > newPlan.maxVideos) {
-        return res.status(400).json({ error: `Select at most ${newPlan.maxPhotos} photos and ${newPlan.maxVideos} videos` });
+      if (validPhotos.length > plan.maxPhotos || validVideos.length > plan.maxVideos) {
+        return res.status(400).json({ error: `Select at most ${plan.maxPhotos} photos and ${plan.maxVideos} videos` });
       }
-      if (!listing.stripe_subscription_id) return res.status(400).json({ error: 'No active subscription on this listing' });
 
       try {
-        const currentSub = await getListingSubscription(listing);
-        if (!currentSub?.itemId) return res.status(400).json({ error: 'Could not read current subscription' });
-        const newPrice = await createPlanPrice(newPlan);
-        // Same immediate-payment guarantee as the upgrade path above — if
-        // the prorated charge fails, this throws before any media is
-        // trimmed or the plan is recorded as changed.
-        await stripe.subscriptions.update(listing.stripe_subscription_id, {
-          items: [{ id: currentSub.itemId, price: newPrice.id }],
-          proration_behavior: 'always_invoice',
-          payment_behavior: 'error_if_incomplete',
-        });
-        await setListingPlan(listing.id, { planKey: newPlanKey, subscriptionId: listing.stripe_subscription_id });
         await setListingMedia(listing.id, { photoUrls: validPhotos, videoUrls: validVideos });
+        const fromPlanKey = typeof req.body?.fromPlanKey === 'string' ? req.body.fromPlanKey : listing.plan_key;
         await notifyPlanChange({
-          listing, seller, fromKey: listing.plan_key, toKey: newPlanKey, direction: 'downgrade',
+          listing, seller, fromKey: fromPlanKey, toKey: listing.plan_key, direction: 'downgrade',
           trimmedPhotos: (listing.photo_urls || []).length - validPhotos.length,
           trimmedVideos: (listing.video_urls || []).length - validVideos.length,
         });
         return res.status(200).json({ ok: true });
       } catch (err) {
         console.error('Confirm downgrade error:', err.message);
-        const message = err.code === 'card_declined' || err.type === 'StripeCardError'
-          ? 'Your payment method was declined. Please update your card and try again.'
-          : 'Could not change your plan. Please try again or contact us.';
-        return res.status(400).json({ error: message });
+        return res.status(400).json({ error: 'Could not save your changes. Please try again or contact us.' });
       }
     }
 

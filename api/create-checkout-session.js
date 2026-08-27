@@ -8,7 +8,7 @@
 import Stripe from 'stripe';
 import { PLANS } from './_lib/plans.js';
 import { requireSession } from './_lib/auth.js';
-import { getSellerById, setSellerCustomerId } from './_lib/sellers-store.js';
+import { getSellerById, getListingById, setSellerCustomerId } from './_lib/sellers-store.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -27,6 +27,20 @@ export default async function handler(req, res) {
   const plan = PLANS[planKey];
   if (!plan) return res.status(400).json({ error: 'Unknown plan' });
 
+  // listingId present = an existing listing changing plans, not a brand new
+  // one. This still runs through real Stripe Checkout (re-confirm the card,
+  // charge happens there, not silently in the background) — verify-session
+  // finishes the job by canceling the old subscription and recording the new
+  // one once Checkout reports the payment succeeded.
+  const listingId = req.body?.listingId;
+  let listing = null;
+  if (listingId) {
+    listing = await getListingById(listingId);
+    if (!listing || listing.seller_id !== seller.id) return res.status(404).json({ error: 'Listing not found' });
+    if (!listing.stripe_subscription_id) return res.status(400).json({ error: 'No active subscription on this listing' });
+    if (planKey === listing.plan_key) return res.status(400).json({ error: 'Already on this plan' });
+  }
+
   const origin = req.headers.origin || `https://${req.headers.host}`;
   const buildParams = (customerId) => ({
     mode: 'subscription',
@@ -43,9 +57,13 @@ export default async function handler(req, res) {
       quantity: 1,
     }],
     client_reference_id: String(seller.id),
-    metadata: { plan: planKey, sellerId: String(seller.id) },
-    success_url: `${origin}/complete-listing.html?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/#plans`,
+    metadata: listing
+      ? { type: 'plan-change', sellerId: String(seller.id), listingId: String(listing.id), newPlanKey: planKey, fromPlanKey: listing.plan_key, oldSubscriptionId: listing.stripe_subscription_id }
+      : { type: 'new-listing', plan: planKey, sellerId: String(seller.id) },
+    success_url: listing
+      ? `${origin}/edit-listing.html?planChangeSession={CHECKOUT_SESSION_ID}`
+      : `${origin}/complete-listing.html?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: listing ? `${origin}/dashboard.html?planChangeCanceled=1` : `${origin}/#plans`,
   });
 
   try {

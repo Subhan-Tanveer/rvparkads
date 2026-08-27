@@ -6,7 +6,9 @@ initPage();
 
 const params = new URLSearchParams(window.location.search);
 const listingId = params.get('id');
-const downgradeTo = params.get('downgradeTo');
+const downgradeTo = params.get('downgradeTo'); // '1' = forced media-trim mode; plan itself already changed
+const fromPlan = params.get('fromPlan'); // only used to label the trim-confirmation email
+const planChangeSession = params.get('planChangeSession'); // Stripe Checkout just redirected back here
 
 const loadingState = document.getElementById('loadingState');
 const errorState = document.getElementById('errorState');
@@ -100,7 +102,26 @@ function setupUpload(inputEl, previewEl, mediaType, isVideo) {
   });
 }
 
+// A plan-change Checkout redirects back here with ?planChangeSession=... —
+// verify-session.js finishes applying the change server-side (payment
+// already cleared on Stripe's page by this point) and tells us where to
+// actually land: straight into the normal media editor for an upgrade, the
+// forced-trim mode for a downgrade that no longer fits, or the dashboard
+// if nothing else is needed. Always a full navigation, never handled
+// in-place, so the URL a user can bookmark/refresh never re-submits a
+// Checkout session that's already been consumed.
+async function resolvePlanChangeSession() {
+  const res = await fetch(`/api/verify-session?session_id=${encodeURIComponent(planChangeSession)}`);
+  if (res.status === 401) { window.location.href = 'login.html'; return true; }
+  const data = await res.json();
+  if (!res.ok) { showError(data.error || 'Could not confirm your payment'); return true; }
+  if (!data.paid) { showError("We couldn't confirm your payment yet. If you just paid, wait a moment and refresh this page."); return true; }
+  window.location.href = data.redirectTo || 'dashboard.html';
+  return true;
+}
+
 async function init() {
+  if (planChangeSession) { await resolvePlanChangeSession(); return; }
   if (!listingId) return showError('No listing specified.');
 
   const accountRes = await fetch('/api/account');
@@ -116,8 +137,11 @@ async function init() {
   if (!res.ok) return showError(data.error || 'Could not load this listing');
   const l = data.listing;
 
-  const effectivePlanKey = downgradeTo || l.planKey;
-  const effectivePlan = PLANS.find((p) => p.key === effectivePlanKey);
+  // The plan itself is already applied by the time anyone reaches this page
+  // (verify-session.js did that right after Checkout) — l.planKey IS the
+  // current, paid-for plan. downgradeTo=1 just means "media still needs to
+  // be trimmed to fit it."
+  const effectivePlan = PLANS.find((p) => p.key === l.planKey);
   if (!effectivePlan) return showError('Unknown plan');
   maxPhotos = effectivePlan.maxPhotos;
   maxVideos = effectivePlan.maxVideos;
@@ -126,7 +150,7 @@ async function init() {
 
   document.getElementById('listingNameHeading').textContent = l.listingName;
   document.getElementById('planLabel').textContent = downgradeTo
-    ? `Downgrading to ${effectivePlan.name}`
+    ? `Now on ${effectivePlan.name}`
     : l.planName;
   document.getElementById('modeMessage').textContent = downgradeTo
     ? `Your current media exceeds ${effectivePlan.name}'s limits — remove photos/videos below until you're within ${maxPhotos} photos and ${maxVideos} video${maxVideos === 1 ? '' : 's'}, then confirm.`
@@ -161,7 +185,7 @@ saveBtn.addEventListener('click', async () => {
       res = await fetch('/api/account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'confirm-downgrade', listingId, newPlanKey: downgradeTo, keepPhotoUrls: currentPhotos, keepVideoUrls: currentVideos }),
+        body: JSON.stringify({ action: 'confirm-downgrade', listingId, fromPlanKey: fromPlan, keepPhotoUrls: currentPhotos, keepVideoUrls: currentVideos }),
       });
     } else {
       res = await fetch('/api/account', {
