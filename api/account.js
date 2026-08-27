@@ -213,9 +213,13 @@ export default async function handler(req, res) {
         const currentSub = await getListingSubscription(listing);
         if (!currentSub?.itemId) return res.status(400).json({ error: 'Could not read current subscription' });
         const newPrice = await createPlanPrice(newPlan);
+        // always_invoice + error_if_incomplete charges the prorated amount
+        // immediately and rejects the whole update (throws here) if payment
+        // fails — the plan only actually changes once they've paid for it.
         await stripe.subscriptions.update(listing.stripe_subscription_id, {
           items: [{ id: currentSub.itemId, price: newPrice.id }],
-          proration_behavior: 'create_prorations',
+          proration_behavior: 'always_invoice',
+          payment_behavior: 'error_if_incomplete',
         });
         await setListingPlan(listing.id, { planKey: newPlanKey, subscriptionId: listing.stripe_subscription_id });
         await notifyPlanChange({ listing, seller, fromKey: listing.plan_key, toKey: newPlanKey, direction: isUpgrade ? 'upgrade' : 'downgrade' });
@@ -225,7 +229,10 @@ export default async function handler(req, res) {
         });
       } catch (err) {
         console.error('Change plan error:', err.message);
-        return res.status(400).json({ error: 'Could not change your plan. Please try again or contact us.' });
+        const message = err.code === 'card_declined' || err.type === 'StripeCardError'
+          ? 'Your payment method was declined. Please update your card and try again.'
+          : 'Could not change your plan. Please try again or contact us.';
+        return res.status(400).json({ error: message });
       }
     }
 
@@ -254,9 +261,13 @@ export default async function handler(req, res) {
         const currentSub = await getListingSubscription(listing);
         if (!currentSub?.itemId) return res.status(400).json({ error: 'Could not read current subscription' });
         const newPrice = await createPlanPrice(newPlan);
+        // Same immediate-payment guarantee as the upgrade path above — if
+        // the prorated charge fails, this throws before any media is
+        // trimmed or the plan is recorded as changed.
         await stripe.subscriptions.update(listing.stripe_subscription_id, {
           items: [{ id: currentSub.itemId, price: newPrice.id }],
-          proration_behavior: 'create_prorations',
+          proration_behavior: 'always_invoice',
+          payment_behavior: 'error_if_incomplete',
         });
         await setListingPlan(listing.id, { planKey: newPlanKey, subscriptionId: listing.stripe_subscription_id });
         await setListingMedia(listing.id, { photoUrls: validPhotos, videoUrls: validVideos });
@@ -268,7 +279,10 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true });
       } catch (err) {
         console.error('Confirm downgrade error:', err.message);
-        return res.status(400).json({ error: 'Could not change your plan. Please try again or contact us.' });
+        const message = err.code === 'card_declined' || err.type === 'StripeCardError'
+          ? 'Your payment method was declined. Please update your card and try again.'
+          : 'Could not change your plan. Please try again or contact us.';
+        return res.status(400).json({ error: message });
       }
     }
 

@@ -36,7 +36,7 @@ function renderListingCard(listing) {
     <div class="dash-row"><span>Price</span><strong>${listing.plan ? formatUsd(listing.plan.monthly) + '/month' : '—'}</strong></div>
     <div class="dash-row"><span>Status</span><strong class="dash-status ${statusClass}">${statusLabel}</strong></div>
     <div class="dash-row"><span>Media</span><strong>${listing.photoCount} photo${listing.photoCount === 1 ? '' : 's'}, ${listing.videoCount} video${listing.videoCount === 1 ? '' : 's'}</strong></div>
-    ${locked ? `<p class="hint" style="margin-top:8px;">This plan has a ${listing.plan.minMonths}-month minimum — you can cancel or downgrade starting ${formatDate(sub.cancelEligibleAt)}.</p>` : ''}
+    ${locked ? `<p class="hint" style="margin-top:8px;">This plan has a ${listing.plan.minMonths}-month minimum — you can cancel starting ${formatDate(sub.cancelEligibleAt)}. Upgrading or downgrading is available anytime.</p>` : ''}
     <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px;">
       <a href="listing-detail.html?id=${listing.id}" class="btn btn-ghost btn-sm"><span>View Details</span></a>
       <a href="edit-listing.html?id=${listing.id}" class="btn btn-ghost btn-sm"><span>Manage Photos/Videos</span></a>
