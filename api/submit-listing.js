@@ -41,27 +41,23 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: `${category === 'lot' ? 'Lot' : 'Park'} name and address are required` });
   }
 
+  const sessionId = b.sessionId || null;
+  if (!sessionId) return res.status(400).json({ error: 'Missing checkout session' });
+
   try {
-    const sessionId = b.sessionId || null;
-    let planKey;
-    if (sessionId) {
-      const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
-      if (checkoutSession.client_reference_id !== String(seller.id)) {
-        return res.status(403).json({ error: 'This checkout session does not belong to your account' });
-      }
-      if (checkoutSession.payment_status !== 'paid' && checkoutSession.status !== 'complete') {
-        return res.status(400).json({ error: 'This checkout session has not been paid' });
-      }
-      planKey = checkoutSession.metadata?.plan || 'level1';
-    } else {
-      if (!seller.planKey) return res.status(400).json({ error: 'Choose a plan first' });
-      planKey = seller.planKey;
+    const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+    if (checkoutSession.client_reference_id !== String(seller.id)) {
+      return res.status(403).json({ error: 'This checkout session does not belong to your account' });
     }
+    if (checkoutSession.payment_status !== 'paid' && checkoutSession.status !== 'complete') {
+      return res.status(400).json({ error: 'This checkout session has not been paid' });
+    }
+    const planKey = checkoutSession.metadata?.plan || 'level1';
 
     await ensureSchema();
-    const existing = await query('SELECT id FROM ads_listings WHERE seller_id = $1', [seller.id]);
+    const existing = await query('SELECT id FROM ads_listings WHERE order_id = $1', [sessionId]);
     if (existing.rows.length > 0) {
-      return res.status(409).json({ error: 'A listing has already been submitted for your account' });
+      return res.status(409).json({ error: 'A listing has already been submitted for this payment' });
     }
 
     const plan = PLANS[planKey] || PLANS.level1;
@@ -73,13 +69,13 @@ export default async function handler(req, res) {
 
     const inserted = await query(
       `INSERT INTO ads_listings (
-        seller_id, order_id, plan_key, category, listing_name, listing_address, num_sites, rv_spaces,
+        seller_id, order_id, stripe_subscription_id, plan_key, category, listing_name, listing_address, num_sites, rv_spaces,
         full_hookup_spaces, tent_spaces, cabins, yurts, rental_types, reservation_system, annual_revenue_cents,
         occupancy_rate, expansion_land, lot_size, hoa_fees_cents, community_activities, amenities, features,
         asking_price_cents, owner_financing, description, photo_urls, video_urls
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27) RETURNING id`,
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28) RETURNING id`,
       [
-        seller.id, sessionId, planKey, category, b.listingName, b.listingAddress,
+        seller.id, sessionId, checkoutSession.subscription || null, planKey, category, b.listingName, b.listingAddress,
         category === 'park' ? (b.numSites || null) : null,
         category === 'park' ? (b.rvSpaces || null) : null,
         category === 'park' ? (b.fullHookupSpaces || null) : null,
@@ -172,7 +168,7 @@ export default async function handler(req, res) {
         ],
         closing: b.description ? `Description: ${b.description}` : null,
         photos: photoUrls,
-        cta: { label: 'View Full Listing', href: `https://rvparkads.vercel.app/listing-detail.html?id=${listingId}` },
+        cta: { label: 'View Full Listing', href: `https://rvparkads.com/listing-detail.html?id=${listingId}` },
       }),
     });
 
@@ -198,7 +194,7 @@ export default async function handler(req, res) {
           ...(videoRows.length ? [{ heading: 'Videos', rows: videoRows }] : []),
         ],
         photos: photoUrls,
-        cta: { label: 'View Your Account', href: 'https://rvparkads.vercel.app/dashboard.html' },
+        cta: { label: 'View Your Account', href: 'https://rvparkads.com/dashboard.html' },
         closing: "Questions in the meantime? Just reply to this email or call us at (850) 832-0022.",
       }),
     });

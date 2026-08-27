@@ -1,12 +1,14 @@
 // Vercel serverless function — POST /api/create-checkout-session
-// Requires a logged-in seller account — picking a plan happens after
-// signup/login now, so the resulting subscription is tied to a real
-// account (client_reference_id) instead of an anonymous Stripe session.
-// Requires STRIPE_SECRET_KEY as an env var.
+// Requires a logged-in seller account. Each checkout pays for one NEW
+// listing's subscription — a seller can call this any number of times to
+// add more parks/lots under the same account, each billed and managed
+// independently. Reuses the seller's Stripe customer (one per account)
+// across every listing's subscription instead of creating a duplicate
+// customer each time.
 import Stripe from 'stripe';
 import { PLANS } from './_lib/plans.js';
 import { requireSession } from './_lib/auth.js';
-import { getSellerById, setSellerStripeInfo } from './_lib/sellers-store.js';
+import { getSellerById, setSellerCustomerId } from './_lib/sellers-store.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -18,7 +20,7 @@ export default async function handler(req, res) {
 
   const session = requireSession(req, res);
   if (!session) return;
-  const seller = await getSellerById(session.sellerId);
+  let seller = await getSellerById(session.sellerId);
   if (!seller) return res.status(401).json({ error: 'Account not found' });
 
   const planKey = req.body?.plan;
@@ -58,7 +60,7 @@ export default async function handler(req, res) {
     if (err.code === 'resource_missing' && seller.stripeCustomerId) {
       console.error('Stale Stripe customer id, retrying by email:', err.message);
       try {
-        await setSellerStripeInfo(seller.id, { customerId: null, subscriptionId: null, planKey: seller.planKey });
+        await setSellerCustomerId(seller.id, null);
         const checkoutSession = await stripe.checkout.sessions.create(buildParams(null));
         return res.status(200).json({ url: checkoutSession.url });
       } catch (retryErr) {

@@ -1,6 +1,10 @@
-// Seller account CRUD — signup, login verification, profile/plan lookup.
-// Mirrors the bcrypt + Postgres pattern already proven in rvparksuccess.com's
-// api/_lib/reservations-store.js (signupOwnerAccount/verifyParkLogin).
+// Seller account CRUD — signup, login verification, profile lookup, plus
+// per-listing reads/writes. Billing lives on each listing (its own
+// stripe_subscription_id/plan_key), not the seller account, so one account
+// can own several listings/parks, each independently paid for, upgraded,
+// downgraded, or canceled. The seller keeps one stripe_customer_id, reused
+// across every listing's subscription so Stripe doesn't create a
+// duplicate customer per listing.
 import bcrypt from 'bcryptjs';
 import { query, ensureSchema } from './db.js';
 
@@ -12,8 +16,6 @@ function mapSeller(row) {
     lastName: row.last_name,
     phone: row.phone,
     stripeCustomerId: row.stripe_customer_id,
-    stripeSubscriptionId: row.stripe_subscription_id,
-    planKey: row.plan_key,
     isAdmin: row.is_admin,
   };
 }
@@ -53,18 +55,17 @@ export async function getSellerById(id) {
   return row ? mapSeller(row) : null;
 }
 
-export async function setSellerStripeInfo(id, { customerId, subscriptionId, planKey }) {
-  const res = await query(
-    `UPDATE ads_sellers SET stripe_customer_id = $2, stripe_subscription_id = $3, plan_key = $4 WHERE id = $1 RETURNING *`,
-    [id, customerId, subscriptionId, planKey]
-  );
+export async function setSellerCustomerId(id, customerId) {
+  const res = await query('UPDATE ads_sellers SET stripe_customer_id = $2 WHERE id = $1 RETURNING *', [id, customerId]);
   return mapSeller(res.rows[0]);
 }
 
-export async function getSellerListing(sellerId) {
+// A seller's own listings (dashboard "Your Listings" list) — every one
+// they own, not just the most recent.
+export async function getSellerListings(sellerId) {
   await ensureSchema();
-  const res = await query('SELECT * FROM ads_listings WHERE seller_id = $1 ORDER BY created_at DESC LIMIT 1', [sellerId]);
-  return res.rows[0] || null;
+  const res = await query('SELECT * FROM ads_listings WHERE seller_id = $1 ORDER BY created_at DESC', [sellerId]);
+  return res.rows;
 }
 
 // Admin-only reads — every listing across every seller, or one in full
@@ -87,4 +88,20 @@ export async function getListingById(id) {
     WHERE l.id = $1
   `, [id]);
   return res.rows[0] || null;
+}
+
+export async function setListingPlan(id, { planKey, subscriptionId }) {
+  const res = await query(
+    'UPDATE ads_listings SET plan_key = $2, stripe_subscription_id = $3 WHERE id = $1 RETURNING *',
+    [id, planKey, subscriptionId]
+  );
+  return res.rows[0];
+}
+
+export async function setListingMedia(id, { photoUrls, videoUrls }) {
+  const res = await query(
+    'UPDATE ads_listings SET photo_urls = $2, video_urls = $3 WHERE id = $1 RETURNING *',
+    [id, photoUrls, videoUrls]
+  );
+  return res.rows[0];
 }

@@ -35,20 +35,13 @@
       <div class="dash-row"><span>Phone</span><strong id="profPhone"></strong></div>
     </div>
 
-    <div class="dash-card" id="planCard">
-      <h3>Your Plan</h3>
-      <div id="planContent"></div>
-    </div>
-
-    <div class="dash-card" id="listingCard" style="display:none;">
-      <h3>Your Listing</h3>
-      <div id="listingContent"></div>
-    </div>
-
-    <div class="dash-card" id="noListingCard" style="display:none;">
-      <h3>Your Listing</h3>
-      <p class="lede" id="noListingText">You haven't finished submitting your park's details yet.</p>
-      <a href="index.html#plans" class="btn btn-primary btn-sm" id="noListingBtn"><span>Choose a Plan</span></a>
+    <div id="sellerListingsSection" style="display:none;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin: var(--sp-4) 0 var(--sp-2);">
+        <h3 style="margin:0;">Your Listings</h3>
+        <a href="index.html#plans" class="btn btn-primary btn-sm"><span>+ Add Another Listing</span></a>
+      </div>
+      <p class="lede" id="noListingsText" style="display:none; margin-bottom:16px;">You don't have any listings yet — choose a plan to get started.</p>
+      <div id="listingsList"></div>
     </div>
 
     <div class="dash-card" id="adminListingsCard" style="display:none;">

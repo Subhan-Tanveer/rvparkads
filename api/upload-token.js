@@ -1,17 +1,18 @@
 // Vercel serverless function — POST /api/upload-token
 // Issues short-lived Vercel Blob upload tokens for listing photos and
 // videos. Upload happens directly browser -> Blob; this server never
-// receives the file bytes. Requires a logged-in seller, plus either a paid
-// checkout session belonging to that account (fresh from Stripe redirect)
-// or an account that already has a plan on file (returning later to
-// finish/resume a listing — no session_id in that case). Photo/video
-// counts are capped per the plan being paid for (see api/_lib/plans.js) —
-// enforced here server-side since the client-side cap in
-// complete-listing.js is just UX, not security.
+// receives the file bytes. Requires a logged-in seller, plus one of:
+//   - sessionId: a paid checkout session belonging to that account, fresh
+//     from Stripe redirect (new listing not yet created)
+//   - listingId: an existing listing the seller owns, uploading more media
+//     against that listing's own current plan (e.g. after an upgrade)
+// Photo/video counts are capped per plan (see api/_lib/plans.js) —
+// enforced here server-side since the client-side cap is just UX, not
+// security.
 import { handleUpload } from '@vercel/blob/client';
 import Stripe from 'stripe';
 import { requireSession } from './_lib/auth.js';
-import { getSellerById } from './_lib/sellers-store.js';
+import { getSellerById, getListingById } from './_lib/sellers-store.js';
 import { PLANS } from './_lib/plans.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -32,10 +33,14 @@ export default async function handler(req, res) {
       request: req,
       body: req.body,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
-        const { sessionId, mediaType, count } = JSON.parse(clientPayload || '{}');
+        const { sessionId, listingId, mediaType, count } = JSON.parse(clientPayload || '{}');
 
         let planKey;
-        if (sessionId) {
+        if (listingId) {
+          const listing = await getListingById(listingId);
+          if (!listing || listing.seller_id !== seller.id) throw new Error('Listing not found');
+          planKey = listing.plan_key;
+        } else if (sessionId) {
           const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
           if (checkoutSession.client_reference_id !== String(seller.id)) {
             throw new Error('This checkout session does not belong to your account');
@@ -45,8 +50,7 @@ export default async function handler(req, res) {
           }
           planKey = checkoutSession.metadata?.plan || 'level1';
         } else {
-          if (!seller.planKey) throw new Error('Choose a plan first to upload media');
-          planKey = seller.planKey;
+          throw new Error('A checkout session or listing is required to upload media');
         }
 
         const plan = PLANS[planKey] || PLANS.level1;

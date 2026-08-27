@@ -55,36 +55,26 @@ function applyMediaLimits(maxPhotos, maxVideos) {
   }
 }
 
-// Two ways to land here: fresh from a Stripe redirect (?session_id=...,
-// needs verifying + attaching to the account), or returning later to
-// finish/pick back up a listing for a plan already on the account (no
-// session_id — just needs the account to actually have a plan).
+// Lands here right after a Stripe redirect (?session_id=...) — each
+// checkout pays for exactly one new listing, so this always needs a real
+// session_id to verify against.
 async function init() {
-  const accountRes = await fetch('/api/account');
-  if (accountRes.status === 401) {
-    window.location.href = 'login.html';
-    return;
-  }
-  const account = await accountRes.json();
-  if (!accountRes.ok) return showError(account.error || 'Could not load your account');
-  if (account.listing) return showAlreadyListed();
+  if (!sessionId) return showError('No checkout session found. Please start from the plans page.');
 
-  if (sessionId) {
-    try {
-      const res = await fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not verify your payment');
-      if (!data.paid) return showError("We couldn't confirm your payment yet. If you just paid, wait a moment and refresh this page.");
-      if (data.alreadyListed) return showAlreadyListed();
-      showForm(`Payment Confirmed — ${PLAN_LABELS[data.planKey] || 'Your Plan'}`, data.maxPhotos, data.maxVideos);
-    } catch (err) {
-      showError(err.message);
+  try {
+    const res = await fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`);
+    if (res.status === 401) {
+      window.location.href = 'login.html';
+      return;
     }
-    return;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not verify your payment');
+    if (!data.paid) return showError("We couldn't confirm your payment yet. If you just paid, wait a moment and refresh this page.");
+    if (data.alreadyListed) return showAlreadyListed();
+    showForm(`Payment Confirmed — ${PLAN_LABELS[data.planKey] || 'Your Plan'}`, data.maxPhotos, data.maxVideos);
+  } catch (err) {
+    showError(err.message);
   }
-
-  if (!account.plan) return showError('Choose a plan first to start your listing.');
-  showForm(PLAN_LABELS[account.plan.key] || account.plan.name, account.plan.maxPhotos, account.plan.maxVideos);
 }
 
 init();

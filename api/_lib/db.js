@@ -25,6 +25,11 @@ let schemaReady = null;
 export async function ensureSchema() {
   if (schemaReady) return schemaReady;
   schemaReady = query(`
+    -- One Stripe customer per seller account (reused across every listing's
+    -- own subscription) — but no plan_key/subscription here, since billing
+    -- is per-listing now, not per-account. A seller can own any number of
+    -- listings, each independently paid for, upgraded, downgraded, or
+    -- canceled.
     CREATE TABLE IF NOT EXISTS ads_sellers (
       id SERIAL PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,
@@ -33,22 +38,25 @@ export async function ensureSchema() {
       last_name TEXT NOT NULL,
       phone TEXT NOT NULL,
       stripe_customer_id TEXT,
-      stripe_subscription_id TEXT,
-      plan_key TEXT,
       is_admin BOOLEAN NOT NULL DEFAULT false,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     ALTER TABLE ads_sellers ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT false;
+    ALTER TABLE ads_sellers DROP COLUMN IF EXISTS plan_key;
+    ALTER TABLE ads_sellers DROP COLUMN IF EXISTS stripe_subscription_id;
 
     -- category: 'park' (a whole RV park for sale) or 'lot' (a single lot
     -- for sale inside an exclusive RV lot community) — two genuinely
     -- different listing types sharing the same seller/plan/payment flow,
     -- distinguished here rather than as separate tables since they share
     -- most columns (name, address, price, financing, description, photos).
+    -- Each row is its own paid listing with its own subscription — seller_id
+    -- is NOT unique, so one account can own several listings/parks.
     CREATE TABLE IF NOT EXISTS ads_listings (
       id SERIAL PRIMARY KEY,
-      seller_id INTEGER NOT NULL UNIQUE REFERENCES ads_sellers(id),
+      seller_id INTEGER NOT NULL REFERENCES ads_sellers(id),
       order_id TEXT,
+      stripe_subscription_id TEXT,
       plan_key TEXT NOT NULL,
       category TEXT NOT NULL DEFAULT 'park',
       listing_name TEXT NOT NULL,
@@ -80,6 +88,8 @@ export async function ensureSchema() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     ALTER TABLE ads_listings ADD COLUMN IF NOT EXISTS video_urls TEXT[];
+    ALTER TABLE ads_listings ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+    ALTER TABLE ads_listings DROP CONSTRAINT IF EXISTS ads_listings_seller_id_key;
   `);
   return schemaReady;
 }

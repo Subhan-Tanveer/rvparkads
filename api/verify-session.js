@@ -1,13 +1,15 @@
 // Vercel serverless function — GET /api/verify-session?session_id=...
 // complete-listing.html calls this on load to confirm the logged-in seller
-// actually paid before showing the park-details form. Also the point where
-// the resulting Stripe customer/subscription gets attached to their
-// account (idempotent — safe to call on every page load/refresh, not just
-// once), since there's no webhook endpoint in this project.
+// actually paid before showing the listing-details form. Also the point
+// where the seller's Stripe customer id gets saved for reuse on future
+// listings (idempotent — safe to call on every page load/refresh, not just
+// once), since there's no webhook endpoint in this project. The
+// subscription itself gets attached to the new listing row in
+// submit-listing.js, not here — nothing to attach it to yet.
 import Stripe from 'stripe';
 import { ensureSchema, query } from './_lib/db.js';
 import { requireSession } from './_lib/auth.js';
-import { getSellerById, setSellerStripeInfo } from './_lib/sellers-store.js';
+import { getSellerById, setSellerCustomerId } from './_lib/sellers-store.js';
 import { PLANS } from './_lib/plans.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -38,12 +40,8 @@ export default async function handler(req, res) {
     }
 
     const planKey = checkoutSession.metadata?.plan || null;
-    if (checkoutSession.customer && checkoutSession.subscription) {
-      await setSellerStripeInfo(seller.id, {
-        customerId: checkoutSession.customer,
-        subscriptionId: checkoutSession.subscription,
-        planKey,
-      });
+    if (checkoutSession.customer && !seller.stripeCustomerId) {
+      await setSellerCustomerId(seller.id, checkoutSession.customer);
     }
 
     await ensureSchema();
