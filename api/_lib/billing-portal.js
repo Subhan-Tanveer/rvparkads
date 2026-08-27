@@ -36,11 +36,11 @@ export async function getOrCreateCanonicalPrices() {
   return result;
 }
 
-const PORTAL_CONFIG_TAG = 'rvpa-plan-change-v1';
+const PORTAL_CONFIG_TAG = 'rvpa-plan-change-v2'; // v2: always_invoice, not create_prorations
 
 async function getOrCreatePortalConfiguration(canonicalPrices) {
   const existing = await stripe.billingPortal.configurations.list({ limit: 100 });
-  const found = existing.data.find((c) => c.metadata?.rvpa === PORTAL_CONFIG_TAG);
+  const found = existing.data.find((c) => c.metadata?.rvpa === PORTAL_CONFIG_TAG && c.active);
   if (found) return found.id;
 
   const created = await stripe.billingPortal.configurations.create({
@@ -57,7 +57,11 @@ async function getOrCreatePortalConfiguration(canonicalPrices) {
       subscription_update: {
         enabled: true,
         default_allowed_updates: ['price'],
-        proration_behavior: 'create_prorations',
+        // always_invoice — not the default create_prorations — is what
+        // makes the confirm screen actually charge the prorated difference
+        // right now instead of just switching the price for next cycle
+        // and leaving this period's difference uncollected.
+        proration_behavior: 'always_invoice',
         products: Object.values(canonicalPrices).map((price) => ({ product: price.product, prices: [price.id] })),
       },
     },
