@@ -12,7 +12,7 @@
 // the background.
 import Stripe from 'stripe';
 import { requireSession } from './_lib/auth.js';
-import { getSellerById, getSellerListings, getListingById, setListingMedia } from './_lib/sellers-store.js';
+import { getSellerById, getSellerListings, getListingById, setListingMedia, enforceMediaLimits } from './_lib/sellers-store.js';
 import { PLANS } from './_lib/plans.js';
 import { notifyPlanChange } from './_lib/plan-notify.js';
 
@@ -80,7 +80,14 @@ export default async function handler(req, res) {
   if (!seller) return res.status(401).json({ error: 'Account not found' });
 
   if (req.method === 'GET') {
-    const listings = await getSellerListings(seller.id);
+    // Safety net: if a downgrade's media never got explicitly trimmed (the
+    // seller closed the tab on the "pick what to remove" screen instead of
+    // finishing it), this is the point that self-heals it — every listing
+    // gets checked against its CURRENT plan's limits on every dashboard
+    // load, so the mismatch can't linger indefinitely even if they never
+    // go back to that screen.
+    const rawListings = await getSellerListings(seller.id);
+    const listings = await Promise.all(rawListings.map((l) => enforceMediaLimits(l)));
     const withSubs = await Promise.all(listings.map(async (l) => mapListingSummary(l, await getListingSubscription(l))));
     return res.status(200).json({
       seller: { firstName: seller.firstName, lastName: seller.lastName, email: seller.email, phone: seller.phone, isAdmin: seller.isAdmin },

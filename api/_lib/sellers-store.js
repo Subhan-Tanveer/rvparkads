@@ -7,6 +7,7 @@
 // duplicate customer per listing.
 import bcrypt from 'bcryptjs';
 import { query, ensureSchema } from './db.js';
+import { PLANS } from './plans.js';
 
 function mapSeller(row) {
   return {
@@ -104,4 +105,26 @@ export async function setListingMedia(id, { photoUrls, videoUrls }) {
     [id, photoUrls, videoUrls]
   );
   return res.rows[0];
+}
+
+// Safety net for a downgrade that never got explicitly trimmed — e.g. the
+// seller closed the tab on the "pick what to remove" screen instead of
+// finishing it. Called every time a listing is read back (dashboard load,
+// listing detail, edit page) so the mismatch can't linger indefinitely:
+// if what's stored exceeds the CURRENT plan's limits, silently keep just
+// the first N (oldest-added) photos/videos and drop the rest. Mutates and
+// returns the same row object so callers don't need to re-fetch.
+export async function enforceMediaLimits(listing) {
+  const plan = PLANS[listing.plan_key];
+  if (!plan) return listing;
+  const photoUrls = listing.photo_urls || [];
+  const videoUrls = listing.video_urls || [];
+  if (photoUrls.length <= plan.maxPhotos && videoUrls.length <= plan.maxVideos) return listing;
+
+  const trimmedPhotos = photoUrls.slice(0, plan.maxPhotos);
+  const trimmedVideos = videoUrls.slice(0, plan.maxVideos);
+  await setListingMedia(listing.id, { photoUrls: trimmedPhotos, videoUrls: trimmedVideos });
+  listing.photo_urls = trimmedPhotos;
+  listing.video_urls = trimmedVideos;
+  return listing;
 }
