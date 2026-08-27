@@ -6,6 +6,8 @@
 .site-header.is-scrolled .header-inner { background: rgba(255,255,255,0.94); box-shadow: 0 12px 32px -18px rgba(18, 32, 44, 0.28); border-color: var(--border-strong); }
 .logo { font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; color: var(--navy); }
 .logo span { color: var(--blue); }
+.logo-img-link { display: flex; align-items: center; flex-shrink: 0; }
+.logo-img { height: 40px; width: auto; display: block; }
 .site-nav-pill { display: flex; gap: var(--sp-4); }
 .site-nav-pill a { font-weight: 600; font-size: 0.9375rem; color: var(--navy-dim); transition: color 0.2s ease; }
 .site-nav-pill a:hover { color: var(--blue-dark); }

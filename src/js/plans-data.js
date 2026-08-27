@@ -28,6 +28,7 @@ export const PLANS = [
     maxPhotos: 10,
     maxVideos: 1,
     features: [
+      'Marketed to our buyer database',
       'Social media promotion',
       'Facebook & Instagram push',
       'Up to 10 photos + 1 video',
@@ -43,8 +44,9 @@ export const PLANS = [
     maxPhotos: 15,
     maxVideos: 2,
     features: [
+      'Professional video content creation',
+      'Regular social media posting',
       'Up to 15 photos + 2 videos',
-      '30-day dedicated marketing campaign',
       'Direct buyer outreach',
       'Weekly performance report',
     ],
