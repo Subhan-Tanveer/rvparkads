@@ -7,7 +7,9 @@
 .logo { font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; color: var(--navy); }
 .logo span { color: var(--blue); }
 .logo-img-link { display: flex; align-items: center; flex-shrink: 0; }
-.logo-img { height: 40px; width: auto; display: block; }
+.logo-img { height: 58px; width: auto; display: block; }
+.footer-logo-chip { display: inline-flex; align-items: center; background: var(--white); padding: 10px 18px; border-radius: var(--radius-md); }
+.footer-logo-chip .logo-img { height: 44px; }
 .site-nav-pill { display: flex; gap: var(--sp-4); }
 .site-nav-pill a { font-weight: 600; font-size: 0.9375rem; color: var(--navy-dim); transition: color 0.2s ease; }
 .site-nav-pill a:hover { color: var(--blue-dark); }
