@@ -1,14 +1,24 @@
 // Vercel serverless function — POST /api/create-checkout-session
-// Requires a logged-in seller account. Each checkout pays for one NEW
-// listing's subscription — a seller can call this any number of times to
-// add more parks/lots under the same account, each billed and managed
-// independently. Reuses the seller's Stripe customer (one per account)
-// across every listing's subscription instead of creating a duplicate
-// customer each time.
+// Requires a logged-in seller account. Two distinct things happen here,
+// both returning a { url } to redirect the browser to:
+//   - No listingId: pay for a brand NEW listing — a real Stripe Checkout
+//     Session (mode: subscription), same as before. A seller can call this
+//     any number of times to add more parks/lots under the same account,
+//     each billed and managed independently.
+//   - listingId present: change an EXISTING listing's plan. This is NOT a
+//     Checkout Session — it deep-links into Stripe's Billing Portal
+//     "confirm this subscription update" flow, which updates the SAME
+//     subscription in place with correct proration (never a duplicate
+//     subscription charging the full new price on top of what's already
+//     been paid this period) while still showing the seller a real
+//     Stripe-hosted page to confirm the exact charge.
+// Reuses the seller's Stripe customer (one per account) across every
+// listing's subscription instead of creating a duplicate customer each time.
 import Stripe from 'stripe';
 import { PLANS } from './_lib/plans.js';
 import { requireSession } from './_lib/auth.js';
 import { getSellerById, getListingById, setSellerCustomerId } from './_lib/sellers-store.js';
+import { getOrCreateCanonicalPrices, createPlanChangePortalSession } from './_lib/billing-portal.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -27,21 +37,39 @@ export default async function handler(req, res) {
   const plan = PLANS[planKey];
   if (!plan) return res.status(400).json({ error: 'Unknown plan' });
 
-  // listingId present = an existing listing changing plans, not a brand new
-  // one. This still runs through real Stripe Checkout (re-confirm the card,
-  // charge happens there, not silently in the background) — verify-session
-  // finishes the job by canceling the old subscription and recording the new
-  // one once Checkout reports the payment succeeded.
   const listingId = req.body?.listingId;
-  let listing = null;
+  const origin = req.headers.origin || `https://${req.headers.host}`;
+
   if (listingId) {
-    listing = await getListingById(listingId);
+    const listing = await getListingById(listingId);
     if (!listing || listing.seller_id !== seller.id) return res.status(404).json({ error: 'Listing not found' });
     if (!listing.stripe_subscription_id) return res.status(400).json({ error: 'No active subscription on this listing' });
     if (planKey === listing.plan_key) return res.status(400).json({ error: 'Already on this plan' });
+    if (!seller.stripeCustomerId) return res.status(400).json({ error: 'No billing account on file for this listing' });
+
+    try {
+      const [currentSub, canonicalPrices] = await Promise.all([
+        stripe.subscriptions.retrieve(listing.stripe_subscription_id),
+        getOrCreateCanonicalPrices(),
+      ]);
+      const itemId = currentSub.items.data[0]?.id;
+      if (!itemId) return res.status(400).json({ error: 'Could not read current subscription' });
+
+      const url = await createPlanChangePortalSession({
+        customerId: seller.stripeCustomerId,
+        subscriptionId: listing.stripe_subscription_id,
+        subscriptionItemId: itemId,
+        newPriceId: canonicalPrices[planKey].id,
+        returnUrl: `${origin}/dashboard.html`,
+        afterCompletionUrl: `${origin}/edit-listing.html?id=${listing.id}&portalDone=1`,
+      });
+      return res.status(200).json({ url });
+    } catch (err) {
+      console.error('Billing portal session error:', err.message);
+      return res.status(500).json({ error: 'Unable to start plan change. Please try again shortly.' });
+    }
   }
 
-  const origin = req.headers.origin || `https://${req.headers.host}`;
   const buildParams = (customerId) => ({
     mode: 'subscription',
     payment_method_types: ['card'],
@@ -57,13 +85,9 @@ export default async function handler(req, res) {
       quantity: 1,
     }],
     client_reference_id: String(seller.id),
-    metadata: listing
-      ? { type: 'plan-change', sellerId: String(seller.id), listingId: String(listing.id), newPlanKey: planKey, fromPlanKey: listing.plan_key, oldSubscriptionId: listing.stripe_subscription_id }
-      : { type: 'new-listing', plan: planKey, sellerId: String(seller.id) },
-    success_url: listing
-      ? `${origin}/edit-listing.html?planChangeSession={CHECKOUT_SESSION_ID}`
-      : `${origin}/complete-listing.html?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: listing ? `${origin}/dashboard.html?planChangeCanceled=1` : `${origin}/#plans`,
+    metadata: { type: 'new-listing', plan: planKey, sellerId: String(seller.id) },
+    success_url: `${origin}/complete-listing.html?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}/#plans`,
   });
 
   try {

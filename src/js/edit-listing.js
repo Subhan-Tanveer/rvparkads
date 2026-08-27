@@ -8,7 +8,7 @@ const params = new URLSearchParams(window.location.search);
 const listingId = params.get('id');
 const downgradeTo = params.get('downgradeTo'); // '1' = forced media-trim mode; plan itself already changed
 const fromPlan = params.get('fromPlan'); // only used to label the trim-confirmation email
-const planChangeSession = params.get('planChangeSession'); // Stripe Checkout just redirected back here
+const portalDone = params.get('portalDone'); // Stripe's Billing Portal plan-change confirm just redirected back here
 
 const loadingState = document.getElementById('loadingState');
 const errorState = document.getElementById('errorState');
@@ -102,26 +102,26 @@ function setupUpload(inputEl, previewEl, mediaType, isVideo) {
   });
 }
 
-// A plan-change Checkout redirects back here with ?planChangeSession=... —
-// verify-session.js finishes applying the change server-side (payment
-// already cleared on Stripe's page by this point) and tells us where to
-// actually land: straight into the normal media editor for an upgrade, the
-// forced-trim mode for a downgrade that no longer fits, or the dashboard
-// if nothing else is needed. Always a full navigation, never handled
-// in-place, so the URL a user can bookmark/refresh never re-submits a
-// Checkout session that's already been consumed.
-async function resolvePlanChangeSession() {
-  const res = await fetch(`/api/verify-session?session_id=${encodeURIComponent(planChangeSession)}`);
+// Stripe's Billing Portal redirects back here with ?portalDone=1 only after
+// the seller actually confirmed and paid for a plan change (backing out of
+// the portal never hits this URL at all). Portal already updated the
+// subscription's price directly on Stripe's side — this just asks
+// verify-session.js to read that back and sync our own records, then tells
+// us where to land: the normal media editor for an upgrade, the forced-trim
+// mode for a downgrade that no longer fits, or the dashboard otherwise.
+// Always a full navigation, never handled in-place, so refreshing this URL
+// just re-syncs (idempotent) instead of re-doing anything.
+async function resolvePortalReturn() {
+  const res = await fetch(`/api/verify-session?listingId=${encodeURIComponent(listingId)}`);
   if (res.status === 401) { window.location.href = 'login.html'; return true; }
   const data = await res.json();
-  if (!res.ok) { showError(data.error || 'Could not confirm your payment'); return true; }
-  if (!data.paid) { showError("We couldn't confirm your payment yet. If you just paid, wait a moment and refresh this page."); return true; }
+  if (!res.ok) { showError(data.error || 'Could not confirm your plan change'); return true; }
   window.location.href = data.redirectTo || 'dashboard.html';
   return true;
 }
 
 async function init() {
-  if (planChangeSession) { await resolvePlanChangeSession(); return; }
+  if (portalDone && listingId) { await resolvePortalReturn(); return; }
   if (!listingId) return showError('No listing specified.');
 
   const accountRes = await fetch('/api/account');
