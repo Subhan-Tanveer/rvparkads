@@ -1,7 +1,7 @@
-// Best-effort hand-off to RVParkSelect.com — that site's members get
-// early access to a listing the moment it's created OR edited here (by
-// the seller or by Marie). Publishes immediately on the other end (see
-// RVParkSelect's api/import-listing.js), no review step. Never throws —
+// Best-effort hand-off to RVParkSelect.com. A NEW listing arrives there as
+// a DRAFT (hidden from members) that Marie reviews and publishes; edits
+// made here afterwards update that same row without changing whether it's
+// a draft or published (see RVParkSelect's api/import-listing.js). Never throws —
 // callers should never let this block or fail their own request just
 // because RVParkSelect is unreachable or misconfigured.
 //
