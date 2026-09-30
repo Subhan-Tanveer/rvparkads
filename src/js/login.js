@@ -1,6 +1,15 @@
 import { initPage } from './core.js';
+import { PLANS, formatUsd } from './plans-data.js';
+import { initAuthScene } from './auth-scene.js';
 
 initPage();
+initAuthScene();
+
+// Every account is a paid advertising plan — no free tier — so the intro
+// copy names the cheapest one instead of implying signup is free.
+const cheapestPlan = PLANS.reduce((min, p) => (p.monthly < min.monthly ? p : min), PLANS[0]);
+document.getElementById('authMinPlanNote').textContent =
+  `starting at ${formatUsd(cheapestPlan.monthly)}/month${cheapestPlan.minMonths ? `, ${cheapestPlan.minMonths}-month minimum` : ''}`;
 
 const params = new URLSearchParams(window.location.search);
 const intendedPlan = params.get('plan');
@@ -18,6 +27,20 @@ tabs.forEach((tab) => {
     signupForm.style.display = isLogin ? 'none' : 'block';
   });
 });
+
+// Arriving with a plan in the URL means "Get Started" sent them here
+// mid-checkout (see index.js) — Marie's feedback was that this page gave
+// zero context on its own, so surface which plan they picked and default
+// straight to the Sign Up tab instead of Log In.
+if (intendedPlan) {
+  const plan = PLANS.find((p) => p.key === intendedPlan);
+  if (plan) {
+    const chip = document.getElementById('authPlanChip');
+    chip.textContent = `Selected: ${plan.name} — ${formatUsd(plan.monthly)}/month`;
+    chip.style.display = 'inline-block';
+    document.querySelector('[data-tab="signup"]').click();
+  }
+}
 
 if (params.get('tab') === 'signup') {
   document.querySelector('[data-tab="signup"]').click();

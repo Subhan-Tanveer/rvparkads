@@ -91,6 +91,49 @@ export async function getListingById(id) {
   return res.rows[0] || null;
 }
 
+// Full-detail edit — everything the seller filled in at submission time,
+// editable afterward by either the seller (their own listing) or Marie
+// (any listing, on the seller's behalf). Deliberately excludes plan/
+// billing/media fields (those go through setListingPlan/setListingMedia,
+// which have their own Stripe/upload-limit rules) so this can't be used
+// to bypass them.
+export async function updateListingDetails(id, {
+  category, listingName, listingAddress, numSites, rvSpaces, fullHookupSpaces, tentSpaces,
+  cabins, yurts, rentalTypes, reservationSystem, annualRevenueCents, occupancyRate, expansionLand,
+  lotSize, hoaFeesCents, communityActivities, amenities, features, askingPriceCents, ownerFinancing, description,
+}) {
+  const res = await query(
+    `UPDATE ads_listings SET
+      category = $2, listing_name = $3, listing_address = $4, num_sites = $5, rv_spaces = $6,
+      full_hookup_spaces = $7, tent_spaces = $8, cabins = $9, yurts = $10, rental_types = $11,
+      reservation_system = $12, annual_revenue_cents = $13, occupancy_rate = $14, expansion_land = $15,
+      lot_size = $16, hoa_fees_cents = $17, community_activities = $18, amenities = $19, features = $20,
+      asking_price_cents = $21, owner_financing = $22, description = $23
+     WHERE id = $1 RETURNING *`,
+    [
+      id, category, listingName, listingAddress,
+      category === 'park' ? (numSites || null) : null,
+      category === 'park' ? (rvSpaces || null) : null,
+      category === 'park' ? (fullHookupSpaces || null) : null,
+      category === 'park' ? (tentSpaces || null) : null,
+      category === 'park' ? (cabins || null) : null,
+      category === 'park' ? (yurts || null) : null,
+      category === 'park' ? (rentalTypes || []) : [],
+      category === 'park' ? (reservationSystem || null) : null,
+      category === 'park' ? (annualRevenueCents ?? null) : null,
+      category === 'park' ? (occupancyRate ?? null) : null,
+      category === 'park' ? !!expansionLand : false,
+      category === 'lot' ? (lotSize || null) : null,
+      category === 'lot' ? (hoaFeesCents ?? null) : null,
+      category === 'lot' ? (communityActivities || null) : null,
+      amenities || [],
+      category === 'park' ? (features || []) : [],
+      askingPriceCents ?? null, !!ownerFinancing, description || null,
+    ]
+  );
+  return res.rows[0] || null;
+}
+
 export async function setListingPlan(id, { planKey, subscriptionId }) {
   const res = await query(
     'UPDATE ads_listings SET plan_key = $2, stripe_subscription_id = $3 WHERE id = $1 RETURNING *',

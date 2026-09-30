@@ -12,6 +12,7 @@ import { renderEmail } from './_lib/email-template.js';
 import { PLANS } from './_lib/plans.js';
 import { requireSession } from './_lib/auth.js';
 import { getSellerById } from './_lib/sellers-store.js';
+import { syncListingToSelect } from './_lib/select-sync.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -96,6 +97,10 @@ export default async function handler(req, res) {
       ]
     );
     const listingId = inserted.rows[0].id;
+    await syncListingToSelect({
+      ...inserted.rows[0],
+      first_name: seller.firstName, last_name: seller.lastName, seller_email: seller.email, seller_phone: seller.phone,
+    });
 
     const sellerName = `${seller.firstName} ${seller.lastName}`;
     const amenitiesList = Array.isArray(b.amenities) && b.amenities.length ? b.amenities.join(', ') : null;

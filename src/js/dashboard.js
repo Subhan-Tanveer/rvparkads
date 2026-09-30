@@ -3,6 +3,10 @@ import { PLANS } from './plans-data.js';
 
 initPage();
 
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 const loadingState = document.getElementById('loadingState');
 const dashboardShell = document.getElementById('dashboardShell');
 
@@ -122,10 +126,14 @@ async function renderAdminListings() {
     return;
   }
   document.getElementById('adminListingsList').innerHTML = data.listings.map((l) => `
-    <a href="listing-detail.html?id=${l.id}" class="dash-row" style="text-decoration:none; cursor:pointer;">
+    <div class="dash-row">
       <span>[${l.category === 'lot' ? 'Lot' : 'Park'}] ${l.listingName} — ${l.sellerName}</span>
-      <strong>${l.planName.replace('RVParkAds.com — ', '')} &rarr;</strong>
-    </a>
+      <span style="display:flex; align-items:center; gap:12px;">
+        <strong>${l.planName.replace('RVParkAds.com — ', '')}</strong>
+        <a href="listing-detail.html?id=${l.id}" class="hint">View</a>
+        <a href="edit-listing.html?id=${l.id}" class="hint">Edit</a>
+      </span>
+    </div>
   `).join('');
 }
 
@@ -152,7 +160,15 @@ async function init() {
     } else {
       document.getElementById('sellerListingsSection').style.display = 'block';
       const list = document.getElementById('listingsList');
-      if (!data.listings.length) {
+      // Paid but never finished the listing form — give them the way back.
+      const pending = data.pendingPurchases || [];
+      document.getElementById('pendingPurchases').innerHTML = pending.map((p) => `
+        <div class="dash-card" style="border:2px solid var(--green, #2e9b54); margin-bottom:16px;">
+          <h3 style="margin-top:0;">Payment received — finish your listing</h3>
+          <p class="lede" style="margin-bottom:12px;">You've paid for the ${escapeHtml(p.planName)} plan, but your park details haven't been submitted yet. Nothing shows up on the site until you finish.</p>
+          <a class="btn btn-primary" href="complete-listing.html?session_id=${encodeURIComponent(p.sessionId)}"><span>Finish Your Listing</span></a>
+        </div>`).join('');
+      if (!data.listings.length && !pending.length) {
         document.getElementById('noListingsText').style.display = 'block';
       } else {
         data.listings.forEach((listing) => list.appendChild(renderListingCard(listing)));

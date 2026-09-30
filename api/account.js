@@ -12,7 +12,7 @@
 // the background.
 import Stripe from 'stripe';
 import { requireSession } from './_lib/auth.js';
-import { getSellerById, getSellerListings, getListingById, setListingMedia, enforceMediaLimits } from './_lib/sellers-store.js';
+import { getSellerById, getSellerListings, getListingById, setListingMedia, enforceMediaLimits, setSellerCustomerId } from './_lib/sellers-store.js';
 import { PLANS } from './_lib/plans.js';
 import { notifyPlanChange } from './_lib/plan-notify.js';
 
@@ -46,6 +46,45 @@ async function getListingSubscription(listing) {
   } catch (err) {
     console.error('Could not fetch subscription:', err.message);
     return null;
+  }
+}
+
+// Purchases the seller has PAID for whose listing form was never
+// submitted — they closed the tab (or lost signal) on complete-listing.html
+// after Stripe's redirect, and nothing else on the site leads back to it.
+// There is no webhook here, so this is derived from Stripe directly: every
+// completed new-listing Checkout Session on this seller's customer whose
+// subscription is still live and whose session id no listing has claimed
+// (ads_listings.order_id). Best-effort — a Stripe hiccup returns none
+// rather than breaking the dashboard.
+async function findPendingPurchases(seller, rawListings) {
+  try {
+    let customerIds = seller.stripeCustomerId ? [seller.stripeCustomerId] : [];
+    if (!customerIds.length) {
+      // Sellers who paid before customers were created up-front never had
+      // their customer id saved — recover it by email.
+      const found = await stripe.customers.list({ email: seller.email, limit: 5 });
+      customerIds = found.data.map((c) => c.id);
+      if (customerIds.length) await setSellerCustomerId(seller.id, customerIds[0]);
+    }
+
+    const claimed = new Set(rawListings.map((l) => l.order_id).filter(Boolean));
+    const pending = [];
+    for (const customerId of customerIds) {
+      const sessions = await stripe.checkout.sessions.list({ customer: customerId, limit: 20, expand: ['data.subscription'] });
+      for (const s of sessions.data) {
+        if (s.mode !== 'subscription' || s.status !== 'complete') continue;
+        if (s.client_reference_id !== String(seller.id) || s.metadata?.type !== 'new-listing') continue;
+        if (!s.subscription || !['active', 'trialing', 'past_due'].includes(s.subscription.status)) continue;
+        if (claimed.has(s.id)) continue;
+        const plan = PLANS[s.metadata?.plan];
+        pending.push({ sessionId: s.id, planKey: s.metadata?.plan || null, planName: plan?.name || 'Listing plan', paidAt: new Date(s.created * 1000).toISOString() });
+      }
+    }
+    return pending;
+  } catch (err) {
+    console.error('Could not look up pending purchases (non-fatal):', err.message);
+    return [];
   }
 }
 
@@ -89,9 +128,11 @@ export default async function handler(req, res) {
     const rawListings = await getSellerListings(seller.id);
     const listings = await Promise.all(rawListings.map((l) => enforceMediaLimits(l)));
     const withSubs = await Promise.all(listings.map(async (l) => mapListingSummary(l, await getListingSubscription(l))));
+    const pendingPurchases = seller.isAdmin ? [] : await findPendingPurchases(seller, rawListings);
     return res.status(200).json({
       seller: { firstName: seller.firstName, lastName: seller.lastName, email: seller.email, phone: seller.phone, isAdmin: seller.isAdmin },
       listings: withSubs,
+      pendingPurchases,
     });
   }
 

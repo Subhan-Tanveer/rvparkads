@@ -22,6 +22,23 @@ import { getOrCreateCanonicalPrices, createPlanChangePortalSession } from './_li
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+// Creates the Stripe customer BEFORE checkout and saves its id right away.
+// Previously a first-time seller was only linked to their Stripe customer
+// when they landed back on complete-listing.html — so a seller who paid
+// and then closed the tab had no recorded customer, and there was no way
+// to find their paid-but-unfinished purchase from the dashboard (see
+// findPendingPurchases in api/account.js).
+async function createStripeCustomer(seller) {
+  const customer = await stripe.customers.create({
+    email: seller.email,
+    name: `${seller.firstName} ${seller.lastName}`.trim(),
+    phone: seller.phone || undefined,
+    metadata: { sellerId: String(seller.id) },
+  });
+  await setSellerCustomerId(seller.id, customer.id);
+  return customer.id;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -73,8 +90,7 @@ export default async function handler(req, res) {
   const buildParams = (customerId) => ({
     mode: 'subscription',
     payment_method_types: ['card'],
-    customer_email: customerId ? undefined : seller.email,
-    customer: customerId || undefined,
+    customer: customerId,
     line_items: [{
       price_data: {
         currency: 'usd',
@@ -91,19 +107,20 @@ export default async function handler(req, res) {
   });
 
   try {
-    const checkoutSession = await stripe.checkout.sessions.create(buildParams(seller.stripeCustomerId));
+    const customerId = seller.stripeCustomerId || await createStripeCustomer(seller);
+    const checkoutSession = await stripe.checkout.sessions.create(buildParams(customerId));
     res.status(200).json({ url: checkoutSession.url });
   } catch (err) {
     // A stored customer ID can go stale (e.g. it was created against a
     // different Stripe mode/key than the one currently configured, or the
     // customer was deleted directly in Stripe's dashboard) — Stripe
     // reports that as "No such customer". Rather than hard-failing,
-    // clear it and retry once by email, which creates a fresh customer.
+    // clear it and retry once with a freshly created customer.
     if (err.code === 'resource_missing' && seller.stripeCustomerId) {
       console.error('Stale Stripe customer id, retrying by email:', err.message);
       try {
-        await setSellerCustomerId(seller.id, null);
-        const checkoutSession = await stripe.checkout.sessions.create(buildParams(null));
+        const freshCustomerId = await createStripeCustomer(seller);
+        const checkoutSession = await stripe.checkout.sessions.create(buildParams(freshCustomerId));
         return res.status(200).json({ url: checkoutSession.url });
       } catch (retryErr) {
         console.error('Stripe checkout retry error:', retryErr.message);

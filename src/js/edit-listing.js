@@ -148,6 +148,7 @@ async function init() {
   currentPhotos = [...l.photoUrls];
   currentVideos = [...l.videoUrls];
 
+  fillDetailsForm(l);
   document.getElementById('listingNameHeading').textContent = l.listingName;
   document.getElementById('planLabel').textContent = downgradeTo
     ? `Now on ${effectivePlan.name}`
@@ -167,6 +168,120 @@ async function init() {
   loadingState.style.display = 'none';
   editShell.style.display = 'block';
 }
+
+// Listing Details form — separate save flow from the Photos/Videos
+// section below (own button, own request), so saving details never risks
+// the media-limit/downgrade logic that the other Save button carries.
+const detailsForm = document.getElementById('detailsForm');
+const saveDetailsBtn = document.getElementById('saveDetailsBtn');
+const detailsAlert = document.getElementById('detailsAlert');
+let currentCategory = 'park';
+
+function fillDetailsForm(l) {
+  currentCategory = l.category === 'lot' ? 'lot' : 'park';
+  const isLot = currentCategory === 'lot';
+  document.getElementById('parkFields').style.display = isLot ? 'none' : 'contents';
+  document.getElementById('lotFields').style.display = isLot ? 'contents' : 'none';
+  document.getElementById('listingNameLabel').textContent = isLot ? 'Lot Name *' : 'Park Name *';
+  document.getElementById('listingAddressLabel').textContent = isLot ? 'Lot Address *' : 'Park Address *';
+  document.getElementById('descriptionLabel').firstChild.textContent = isLot ? 'Lot Description ' : 'Park Description ';
+  // Only the amenities checkboxes relevant to this listing's category
+  // apply here (park vs. lot use different option sets, sharing the
+  // `amenities` field name) — hide the other set entirely in edit mode
+  // since there's no category toggle to switch between them.
+  document.getElementById('parkAmenities').closest('.form-field').style.display = isLot ? 'none' : 'block';
+  document.getElementById('lotAmenities').closest('.form-field').style.display = isLot ? 'block' : 'none';
+
+  document.getElementById('listingName').value = l.listingName || '';
+  document.getElementById('listingAddress').value = l.listingAddress || '';
+  document.getElementById('numSites').value = l.numSites || '';
+  document.getElementById('rvSpaces').value = l.rvSpaces || '';
+  document.getElementById('fullHookupSpaces').value = l.fullHookupSpaces || '';
+  document.getElementById('tentSpaces').value = l.tentSpaces || '';
+  document.getElementById('cabins').value = l.cabins || '';
+  document.getElementById('yurts').value = l.yurts || '';
+  document.getElementById('annualRevenue').value = l.annualRevenueCents ? l.annualRevenueCents / 100 : '';
+  document.getElementById('occupancyRate').value = l.occupancyRate ?? '';
+  document.getElementById('reservationSystem').value = l.reservationSystem || '';
+  document.getElementById('lotSize').value = l.lotSize || '';
+  document.getElementById('hoaFees').value = l.hoaFeesCents ? l.hoaFeesCents / 100 : '';
+  document.getElementById('communityActivities').value = l.communityActivities || '';
+  document.getElementById('askingPrice').value = l.askingPriceCents ? l.askingPriceCents / 100 : '';
+  document.getElementById('description').value = l.description || '';
+  document.getElementById('ownerFinancingPark').checked = !!l.ownerFinancing;
+  document.getElementById('ownerFinancingLot').checked = !!l.ownerFinancing;
+  document.getElementById('expansionLand').checked = !!l.expansionLand;
+
+  const rentalTypes = new Set(l.rentalTypes || []);
+  detailsForm.querySelectorAll('input[name="rentalTypes"]').forEach((el) => { el.checked = rentalTypes.has(el.value); });
+  const amenities = new Set(l.amenities || []);
+  detailsForm.querySelectorAll('input[name="amenities"]').forEach((el) => { el.checked = amenities.has(el.value); });
+  const features = new Set(l.features || []);
+  detailsForm.querySelectorAll('input[name="features"]').forEach((el) => { el.checked = features.has(el.value); });
+}
+
+function toCentsOrNull(v) {
+  const n = Number(v);
+  return Number.isFinite(n) && v !== '' ? Math.round(n * 100) : null;
+}
+
+detailsForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  detailsAlert.className = 'form-alert';
+  saveDetailsBtn.disabled = true;
+  saveDetailsBtn.innerHTML = '<span>Saving…</span>';
+
+  const data = Object.fromEntries(new FormData(detailsForm).entries());
+  const amenities = Array.from(detailsForm.querySelectorAll('input[name="amenities"]:checked')).map((el) => el.value);
+  const features = Array.from(detailsForm.querySelectorAll('input[name="features"]:checked')).map((el) => el.value);
+  const rentalTypes = Array.from(detailsForm.querySelectorAll('input[name="rentalTypes"]:checked')).map((el) => el.value);
+  const ownerFinancing = document.getElementById('ownerFinancingPark').checked || document.getElementById('ownerFinancingLot').checked;
+  const expansionLand = document.getElementById('expansionLand').checked;
+
+  try {
+    const res = await fetch(`/api/admin-listings?id=${encodeURIComponent(listingId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        category: currentCategory,
+        listingName: data.listingName,
+        listingAddress: data.listingAddress,
+        numSites: data.numSites || null,
+        rvSpaces: data.rvSpaces || null,
+        fullHookupSpaces: data.fullHookupSpaces || null,
+        tentSpaces: data.tentSpaces || null,
+        cabins: data.cabins || null,
+        yurts: data.yurts || null,
+        rentalTypes,
+        reservationSystem: data.reservationSystem || null,
+        annualRevenueCents: toCentsOrNull(data.annualRevenue),
+        occupancyRate: data.occupancyRate !== '' ? Number(data.occupancyRate) : null,
+        expansionLand,
+        lotSize: data.lotSize || null,
+        hoaFeesCents: toCentsOrNull(data.hoaFees),
+        communityActivities: data.communityActivities || null,
+        amenities,
+        features,
+        askingPriceCents: toCentsOrNull(data.askingPrice),
+        ownerFinancing,
+        description: data.description || null,
+      }),
+    });
+    if (res.status === 401) { window.location.href = 'login.html'; return; }
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Could not save changes');
+
+    document.getElementById('listingNameHeading').textContent = data.listingName;
+    detailsAlert.textContent = 'Saved!';
+    detailsAlert.className = 'form-alert success is-visible';
+  } catch (err) {
+    detailsAlert.textContent = err.message;
+    detailsAlert.className = 'form-alert error is-visible';
+  } finally {
+    saveDetailsBtn.disabled = false;
+    saveDetailsBtn.innerHTML = '<span>Save Details</span>';
+  }
+});
 
 init();
 
