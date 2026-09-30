@@ -14,7 +14,7 @@
 // seller_email, seller_phone}` spread right after their own insert).
 // RVParkSelect gates this behind an NDA the buyer signs (see its
 // nda-store.js) before showing it to anyone — never shown raw.
-export async function syncListingToSelect(row) {
+export async function syncListingToSelect(row, { mediaOnly = false } = {}) {
   if (!process.env.SELECT_SITE_URL || !process.env.ADS_IMPORT_SECRET) return;
   try {
     await fetch(`${process.env.SELECT_SITE_URL}/api/import-listing`, {
@@ -22,6 +22,10 @@ export async function syncListingToSelect(row) {
       headers: { 'Content-Type': 'application/json', 'X-Import-Secret': process.env.ADS_IMPORT_SECRET },
       body: JSON.stringify({
         sourceAdsListingId: row.id,
+        // When true and the listing already exists over there, only its
+        // photos/videos are updated — Marie's own edits to the other fields
+        // on RVParkSelect are left alone.
+        mediaOnly,
         category: row.category,
         listingName: row.listing_name,
         listingAddress: row.listing_address,

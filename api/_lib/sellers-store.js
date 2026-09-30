@@ -8,6 +8,7 @@
 import bcrypt from 'bcryptjs';
 import { query, ensureSchema } from './db.js';
 import { PLANS } from './plans.js';
+import { syncListingToSelect } from './select-sync.js';
 
 function mapSeller(row) {
   return {
@@ -142,11 +143,23 @@ export async function setListingPlan(id, { planKey, subscriptionId }) {
   return res.rows[0];
 }
 
+// Every photo/video change funnels through here — a seller updating their
+// media, confirming a downgrade trim, or the automatic trim in
+// enforceMediaLimits() — so this is the one place that carries it over to
+// RVParkSelect. Awaited (Vercel can freeze a function the moment its
+// response is sent) and never throws: the sync is best-effort and must not
+// fail the seller's own save.
 export async function setListingMedia(id, { photoUrls, videoUrls }) {
   const res = await query(
     'UPDATE ads_listings SET photo_urls = $2, video_urls = $3 WHERE id = $1 RETURNING *',
     [id, photoUrls, videoUrls]
   );
+  try {
+    const full = await getListingById(id); // has the seller-joined fields the sync needs
+    if (full) await syncListingToSelect(full, { mediaOnly: true });
+  } catch (err) {
+    console.error('RVParkSelect media sync failed (non-fatal):', err.message);
+  }
   return res.rows[0];
 }
 
