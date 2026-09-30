@@ -48,6 +48,10 @@ export async function syncListingToSelect(row) {
         amenities: row.amenities || [],
         features: row.features || [],
         ownerFinancing: row.owner_financing,
+        // Only used when the listing is first created over there (a By Owner
+        // seller's listing arrives pre-marked); later syncs never overwrite
+        // what Marie has set on RVParkSelect.
+        byOwner: row.seller_role === 'owner',
         sellerName: row.first_name && row.last_name ? `${row.first_name} ${row.last_name}` : null,
         sellerEmail: row.seller_email || null,
         sellerPhone: row.seller_phone || null,

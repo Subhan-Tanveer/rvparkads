@@ -66,6 +66,7 @@ export default async function handler(req, res) {
     const videoUrls = Array.isArray(b.videoUrls) ? b.videoUrls.slice(0, plan.maxVideos) : [];
     const rentalTypes = Array.isArray(b.rentalTypes) ? b.rentalTypes : [];
     const ownerFinancing = !!b.ownerFinancing;
+    const sellerRole = b.sellerRole === 'owner' || b.sellerRole === 'broker' ? b.sellerRole : null;
     const expansionLand = category === 'park' && !!b.expansionLand;
 
     const inserted = await query(
@@ -73,8 +74,8 @@ export default async function handler(req, res) {
         seller_id, order_id, stripe_subscription_id, plan_key, category, listing_name, listing_address, num_sites, rv_spaces,
         full_hookup_spaces, tent_spaces, cabins, yurts, rental_types, reservation_system, annual_revenue_cents,
         occupancy_rate, expansion_land, lot_size, hoa_fees_cents, community_activities, amenities, features,
-        asking_price_cents, owner_financing, description, photo_urls, video_urls
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28) RETURNING id`,
+        asking_price_cents, owner_financing, description, photo_urls, video_urls, seller_role
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29) RETURNING *`,
       [
         seller.id, sessionId, checkoutSession.subscription || null, planKey, category, b.listingName, b.listingAddress,
         category === 'park' ? (b.numSites || null) : null,
@@ -93,7 +94,7 @@ export default async function handler(req, res) {
         category === 'lot' ? (b.communityActivities || null) : null,
         Array.isArray(b.amenities) ? b.amenities : [],
         category === 'park' ? (Array.isArray(b.features) ? b.features : []) : [],
-        toCentsOrNull(b.askingPrice), ownerFinancing, b.description || null, photoUrls, videoUrls,
+        toCentsOrNull(b.askingPrice), ownerFinancing, b.description || null, photoUrls, videoUrls, sellerRole,
       ]
     );
     const listingId = inserted.rows[0].id;
@@ -135,6 +136,7 @@ export default async function handler(req, res) {
     const financialRows = [
       ['Asking Price', askingPriceFmt],
       ['Owner Financing Considered', ownerFinancing ? 'Yes' : 'No'],
+      ['Listed By', sellerRole === 'owner' ? 'Owner (By Owner)' : (sellerRole === 'broker' ? 'Broker / Agent' : null)],
     ];
 
     const videoRows = videoUrls.map((url, i) => [`Video ${i + 1}`, url]);

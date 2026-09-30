@@ -88,6 +88,9 @@ export async function ensureSchema() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     ALTER TABLE ads_listings ADD COLUMN IF NOT EXISTS video_urls TEXT[];
+    -- Who is submitting: 'owner' (selling their own park — By Owner) or
+    -- 'broker'. Null on listings created before this question existed.
+    ALTER TABLE ads_listings ADD COLUMN IF NOT EXISTS seller_role TEXT;
     ALTER TABLE ads_listings ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
     ALTER TABLE ads_listings DROP CONSTRAINT IF EXISTS ads_listings_seller_id_key;
   `);

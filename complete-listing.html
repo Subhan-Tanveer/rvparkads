@@ -48,6 +48,14 @@
           </div>
         </div>
 
+        <div class="form-field full">
+          <label>Are you the owner or a broker? *</label>
+          <div class="checkbox-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <label class="checkbox-item"><input type="radio" name="sellerRole" value="owner" required> Owner <span class="hint">(selling my own property)</span></label>
+            <label class="checkbox-item"><input type="radio" name="sellerRole" value="broker" required> Broker / Agent <span class="hint">(listing for a client)</span></label>
+          </div>
+        </div>
+
         <div class="form-field full"><label for="listingName" id="listingNameLabel">Park Name *</label><input id="listingName" name="listingName" required></div>
         <div class="form-field full"><label for="listingAddress" id="listingAddressLabel">Park Address *</label><input id="listingAddress" name="listingAddress" required></div>
 
