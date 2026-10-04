@@ -3,6 +3,7 @@
 // an env var. Mirrors the pattern already proven on rvparksuccess.com's
 // api/_lib/auth.js.
 import jwt from 'jsonwebtoken';
+import { timingSafeEqual } from 'node:crypto';
 
 const COOKIE_NAME = 'rvpa_seller_session';
 const SESSION_DAYS = 30;
@@ -30,7 +31,24 @@ function readCookie(req, name) {
   return match ? match.slice(name.length + 1) : null;
 }
 
+// RVParkSales.com's admin manages this site too: its server sends the
+// shared ADMIN_BRIDGE_SECRET in an x-admin-bridge header and is treated as
+// Marie's own admin account (ADMIN_BRIDGE_SELLER_ID). Server-to-server only;
+// the secret never reaches a browser.
+function bridgeSession(req) {
+  const secret = process.env.ADMIN_BRIDGE_SECRET;
+  const sent = req.headers['x-admin-bridge'];
+  const id = Number(process.env.ADMIN_BRIDGE_SELLER_ID);
+  if (!secret || !sent || !id || typeof sent !== 'string') return null;
+  const a = Buffer.from(sent);
+  const b = Buffer.from(secret);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  return { sellerId: id, bridge: true };
+}
+
 export function getSession(req) {
+  const bridged = bridgeSession(req);
+  if (bridged) return bridged;
   const token = readCookie(req, COOKIE_NAME);
   if (!token) return null;
   try {
