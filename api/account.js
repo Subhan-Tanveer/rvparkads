@@ -93,7 +93,7 @@ async function findPendingPurchases(seller, rawListings) {
 async function getListingStats(listing) {
   if (!process.env.SELECT_SITE_URL || !process.env.ADS_IMPORT_SECRET) return null;
   try {
-    const r = await fetch(`${process.env.SELECT_SITE_URL}/api/listing-stats?ads=${listing.id}`, {
+    const r = await fetch(`${process.env.SELECT_SITE_URL}/api/listing-stats/?ads=${listing.id}`, {
       headers: { 'X-Import-Secret': process.env.ADS_IMPORT_SECRET }, signal: AbortSignal.timeout(4000),
     });
     return r.ok ? await r.json() : null;
