@@ -39,6 +39,9 @@ function renderListingCard(listing) {
     <div class="dash-row"><span>Plan</span><strong>${listing.plan?.name.replace('RVParkAds.com — ', '') || '—'}</strong></div>
     <div class="dash-row"><span>Price</span><strong>${listing.plan ? formatUsd(listing.plan.monthly) + '/month' : '—'}</strong></div>
     <div class="dash-row"><span>Status</span><strong class="dash-status ${statusClass}">${statusLabel}</strong></div>
+    ${listing.stats ? `
+    <div class="dash-row"><span>Last 30 days</span><strong>${listing.stats.views30} view${listing.stats.views30 === 1 ? '' : 's'} · ${listing.stats.inquiries30} inquir${listing.stats.inquiries30 === 1 ? 'y' : 'ies'}</strong></div>
+    ${listing.stats.monthly?.length ? `<details class="stats-report"><summary>Monthly report</summary><table><thead><tr><th>Month</th><th>Views</th><th>Inquiries</th></tr></thead><tbody>${listing.stats.monthly.map((m) => `<tr><td>${new Date(`${m.month}-15`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</td><td>${m.views}</td><td>${m.inquiries}</td></tr>`).join('')}</tbody></table></details>` : ''}` : ''}
     <div class="dash-row"><span>Media</span><strong>${listing.photoCount} photo${listing.photoCount === 1 ? '' : 's'}, ${listing.videoCount} video${listing.videoCount === 1 ? '' : 's'}</strong></div>
     ${locked ? `<p class="hint" style="margin-top:8px;">This plan has a ${listing.plan.minMonths}-month minimum — you can cancel starting ${formatDate(sub.cancelEligibleAt)}. Upgrading or downgrading is available anytime.</p>` : ''}
     <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px;">

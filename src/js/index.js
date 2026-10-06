@@ -9,6 +9,7 @@ function planCard(plan) {
   card.className = 'plan-card' + (plan.featured ? ' featured' : '');
   card.innerHTML = `
     ${plan.badgeLabel ? `<span class="plan-badge">${plan.badgeLabel}</span>` : ''}
+    ${plan.level ? `<p class="plan-level">${plan.level}</p>` : ''}
     <h3>${plan.name}</h3>
     <p class="plan-tagline">${plan.tagline}</p>
     <div class="plan-price"><span class="amount">${formatUsd(plan.monthly)}</span><span class="period">/month</span></div>
@@ -23,6 +24,15 @@ function planCard(plan) {
 }
 
 PLANS.forEach((plan) => grid.appendChild(planCard(plan)));
+
+// The live size of the RVParkSelect buyer network, once it's big enough to
+// impress; until then the hero keeps its general "Buyers Reached" figure.
+const BUYER_COUNT_MIN = 100;
+fetch('https://rvparkselect.com/api/listings?stats=1').then((r) => (r.ok ? r.json() : null)).then((d) => {
+  const el = document.getElementById('buyerStat');
+  if (!el || !d || !(d.buyers >= BUYER_COUNT_MIN)) return;
+  el.innerHTML = `<strong>${d.buyers.toLocaleString('en-US')}</strong><span>Registered Buyers</span>`;
+}).catch(() => {});
 
 initPage();
 

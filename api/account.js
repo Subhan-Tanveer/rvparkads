@@ -88,7 +88,21 @@ async function findPendingPurchases(seller, rawListings) {
   }
 }
 
-function mapListingSummary(listing, subscription) {
+// Views and buyer inquiries for the listing on RVParkSales.com (SELECT_SITE_URL
+// is where listings are sent; it counts them). Best-effort: null if unavailable.
+async function getListingStats(listing) {
+  if (!process.env.SELECT_SITE_URL || !process.env.ADS_IMPORT_SECRET) return null;
+  try {
+    const r = await fetch(`${process.env.SELECT_SITE_URL}/api/listing-stats?ads=${listing.id}`, {
+      headers: { 'X-Import-Secret': process.env.ADS_IMPORT_SECRET }, signal: AbortSignal.timeout(4000),
+    });
+    return r.ok ? await r.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+function mapListingSummary(listing, subscription, stats = null) {
   const plan = PLANS[listing.plan_key];
   return {
     id: listing.id,
@@ -100,6 +114,7 @@ function mapListingSummary(listing, subscription) {
     subscription,
     photoCount: (listing.photo_urls || []).length,
     videoCount: (listing.video_urls || []).length,
+    stats,
   };
 }
 
@@ -127,7 +142,10 @@ export default async function handler(req, res) {
     // go back to that screen.
     const rawListings = await getSellerListings(seller.id);
     const listings = await Promise.all(rawListings.map((l) => enforceMediaLimits(l)));
-    const withSubs = await Promise.all(listings.map(async (l) => mapListingSummary(l, await getListingSubscription(l))));
+    const withSubs = await Promise.all(listings.map(async (l) => {
+      const [sub, stats] = await Promise.all([getListingSubscription(l), getListingStats(l)]);
+      return mapListingSummary(l, sub, stats);
+    }));
     const pendingPurchases = seller.isAdmin ? [] : await findPendingPurchases(seller, rawListings);
     return res.status(200).json({
       seller: { firstName: seller.firstName, lastName: seller.lastName, email: seller.email, phone: seller.phone, isAdmin: seller.isAdmin },

@@ -22,6 +22,8 @@ export async function syncListingToSelect(row, { mediaOnly = false } = {}) {
       headers: { 'Content-Type': 'application/json', 'X-Import-Secret': process.env.ADS_IMPORT_SECRET },
       body: JSON.stringify({
         sourceAdsListingId: row.id,
+        // Level 2 = Featured, Level 3 = Featured + home page (RVParkSales).
+        planKey: row.plan_key || null,
         // When true and the listing already exists over there, only its
         // photos/videos are updated — Marie's own edits to the other fields
         // on RVParkSelect are left alone.

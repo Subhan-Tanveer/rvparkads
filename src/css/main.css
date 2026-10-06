@@ -109,6 +109,32 @@
 .plan-features li.includes-prior { font-weight: 700; color: var(--blue-dark); }
 .plan-features .check { color: var(--teal); font-weight: 700; flex-shrink: 0; }
 .plan-card .btn { width: 100%; }
+.stats-report { margin: 6px 0 4px; font-size: 0.875rem; }
+.stats-report summary { cursor: pointer; color: var(--blue-dark); font-weight: 600; padding: 6px 0; }
+.stats-report table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.stats-report th, .stats-report td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.stats-report th { color: var(--navy-dim); font-weight: 600; }
+.plan-level { text-align: center; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--blue-dark); margin-bottom: 4px; }
+.promise-strip { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 14px; margin-top: var(--sp-4); }
+.promise-strip span { padding: 10px 18px; border-radius: 999px; background: var(--white); border: 1px solid var(--border); font-size: 0.9375rem; color: var(--navy); }
+.promise-strip b { color: var(--blue-dark); }
+.plans-note a { color: var(--blue-dark); font-weight: 600; }
+
+/* -- listing site vs RVParkAds comparison -- */
+.compare-table { max-width: 900px; margin: 0 auto; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); background: var(--white); box-shadow: var(--shadow-card); }
+.ct-row { display: grid; grid-template-columns: 1.6fr 1fr 1fr; align-items: center; border-top: 1px solid var(--border); }
+.ct-row:first-child { border-top: 0; }
+.ct-row > span { padding: 14px 18px; font-size: 0.9375rem; color: var(--navy); }
+.ct-row > span:not(:first-child) { text-align: center; }
+.ct-row > span:last-child { background: var(--blue-light); }
+.ct-head > span { font-family: var(--font-display); font-weight: 700; font-size: 0.875rem; }
+.ct-head > span:last-child { background: var(--blue); color: var(--white); }
+.ct-row .yes { color: var(--teal); font-weight: 700; }
+.ct-row .no { color: var(--navy-dim); }
+@media (max-width: 640px) {
+  .ct-row { grid-template-columns: 1.3fr 0.8fr 1fr; }
+  .ct-row > span { padding: 12px 10px; font-size: 0.8125rem; }
+}
 .plans-note { text-align: center; font-size: 0.875rem; color: var(--navy-dim); margin-top: var(--sp-4); }
 
 /* -- bento trust grid -- */
@@ -146,7 +172,7 @@
 
 /* -- footer -- */
 .site-footer { background: var(--navy); color: rgba(255,255,255,0.85); padding-top: var(--sp-8); }
-.footer-inner { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--sp-5); padding-bottom: var(--sp-6); }
+.footer-inner { display: grid; grid-template-columns: 2fr 1fr 1.3fr 1fr; gap: var(--sp-5); padding-bottom: var(--sp-6); }
 @media (max-width: 720px) { .footer-inner { grid-template-columns: 1fr; } }
 .site-footer .logo { color: var(--white); }
 .site-footer .logo span { color: #6fd3f5; }

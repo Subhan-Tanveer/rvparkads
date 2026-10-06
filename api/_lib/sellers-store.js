@@ -140,6 +140,13 @@ export async function setListingPlan(id, { planKey, subscriptionId }) {
     'UPDATE ads_listings SET plan_key = $2, stripe_subscription_id = $3 WHERE id = $1 RETURNING *',
     [id, planKey, subscriptionId]
   );
+  // A plan change moves the park in or out of Featured on RVParkSales.
+  try {
+    const full = await getListingById(id);
+    if (full) await syncListingToSelect(full, { mediaOnly: true });
+  } catch (err) {
+    console.error('RVParkSales plan sync failed (non-fatal):', err.message);
+  }
   return res.rows[0];
 }
 
