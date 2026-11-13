@@ -58,6 +58,8 @@ export async function syncListingToSelect(row, { mediaOnly = false } = {}) {
         // seller's listing arrives pre-marked); later syncs never overwrite
         // what Marie has set on RVParkSelect.
         byOwner: row.seller_role === 'owner',
+        // Brokers who advertise are shown on RVParkSales' Sell page.
+        sellerRole: row.seller_role || null,
         sellerName: row.first_name && row.last_name ? `${row.first_name} ${row.last_name}` : null,
         sellerEmail: row.seller_email || null,
         sellerPhone: row.seller_phone || null,
