@@ -90,7 +90,7 @@
 @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
 
 /* -- plans grid -- */
-.plans-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); align-items: stretch; perspective: 1200px; }
+.plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 440px)); justify-content: center; gap: var(--sp-3); align-items: stretch; perspective: 1200px; }
 @media (max-width: 900px) { .plans-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; } }
 
 .plan-card { position: relative; display: flex; flex-direction: column; padding: var(--sp-4); border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--white); box-shadow: var(--shadow-card); transform-style: preserve-3d; will-change: transform; transition: box-shadow 0.3s ease, border-color 0.3s ease; }

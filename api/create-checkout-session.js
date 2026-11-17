@@ -53,6 +53,8 @@ export default async function handler(req, res) {
   const planKey = req.body?.plan;
   const plan = PLANS[planKey];
   if (!plan) return res.status(400).json({ error: 'Unknown plan' });
+  // Retired levels can be kept by sellers already on them, but never bought or switched to.
+  if (plan.retired) return res.status(400).json({ error: 'That plan is no longer offered.' });
 
   const listingId = req.body?.listingId;
   const origin = req.headers.origin || `https://${req.headers.host}`;

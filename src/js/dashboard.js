@@ -1,5 +1,5 @@
 import { initPage, renderAccountMenu } from './core.js';
-import { PLANS } from './plans-data.js';
+import { PLANS, ALL_PLANS } from './plans-data.js';
 
 initPage();
 
@@ -18,9 +18,14 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
+// Only plans on sale can be picked; a retired current plan is listed so it shows as selected.
 function planOptions(currentKey) {
-  return PLANS.map((p) => `<option value="${p.key}" ${p.key === currentKey ? 'selected' : ''}>${p.name} — ${formatUsd(p.monthly)}/mo</option>`).join('');
+  const current = ALL_PLANS.find((p) => p.key === currentKey);
+  const list = current && !PLANS.includes(current) ? [current, ...PLANS] : PLANS;
+  return list.map((p) => `<option value="${p.key}" ${p.key === currentKey ? 'selected' : ''}>${p.name} — ${formatUsd(p.monthly)}/mo</option>`).join('');
 }
+// Nothing to switch to when the seller is already on the one plan on sale.
+const canChangePlan = (currentKey) => PLANS.some((p) => p.key !== currentKey);
 
 function renderListingCard(listing) {
   const card = document.createElement('div');
@@ -47,7 +52,7 @@ function renderListingCard(listing) {
     <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px;">
       <a href="listing-detail.html?id=${listing.id}" class="btn btn-ghost btn-sm"><span>View Details</span></a>
       <a href="edit-listing.html?id=${listing.id}" class="btn btn-ghost btn-sm"><span>Manage Photos/Videos</span></a>
-      ${sub && !sub.cancelAtPeriodEnd ? `
+      ${sub && !sub.cancelAtPeriodEnd && canChangePlan(listing.plan?.key) ? `
         <select class="plan-select" data-listing-id="${listing.id}" style="padding:10px 12px; border-radius:999px; border:1px solid var(--border-strong); font-size:0.8125rem; font-weight:600;">
           <option value="">Change Plan…</option>
           ${planOptions(listing.plan?.key)}

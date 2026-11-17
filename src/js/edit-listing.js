@@ -1,6 +1,6 @@
 import { initPage, renderAccountMenu } from './core.js';
 import { upload } from '@vercel/blob/client';
-import { PLANS } from './plans-data.js';
+import { ALL_PLANS } from './plans-data.js';
 
 initPage();
 
@@ -141,7 +141,7 @@ async function init() {
   // (verify-session.js did that right after Checkout) — l.planKey IS the
   // current, paid-for plan. downgradeTo=1 just means "media still needs to
   // be trimmed to fit it."
-  const effectivePlan = PLANS.find((p) => p.key === l.planKey);
+  const effectivePlan = ALL_PLANS.find((p) => p.key === l.planKey);
   if (!effectivePlan) return showError('Unknown plan');
   maxPhotos = effectivePlan.maxPhotos;
   maxVideos = effectivePlan.maxVideos;
