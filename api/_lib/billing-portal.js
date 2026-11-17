@@ -16,9 +16,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 // Price id to hand the customer a confirm screen for, and lookup_key makes
 // this idempotent: safe to call on every request without creating
 // duplicate Prices in the Stripe dashboard.
-// level1 moved to $39 in Nov 2026: new lookup key so a new Price is made;
-// subscribers on the old $99 Price keep it until they change plan.
-const LOOKUP_KEYS = { level1: 'rvpa_level1_39', level2: 'rvpa_level2', level3: 'rvpa_level3' };
+// level1 is $99 again (briefly $39 on 2026-11-17): back on the original
+// rvpa_level1 Price, so subscribers already on it match.
+const LOOKUP_KEYS = { level1: 'rvpa_level1', level2: 'rvpa_level2', level3: 'rvpa_level3' };
 
 export async function getOrCreateCanonicalPrices() {
   const existing = await stripe.prices.list({ lookup_keys: Object.values(LOOKUP_KEYS), active: true, limit: 10 });
@@ -38,7 +38,7 @@ export async function getOrCreateCanonicalPrices() {
   return result;
 }
 
-const PORTAL_CONFIG_TAG = 'rvpa-plan-change-v3'; // v3: $39 level1 price; v2: always_invoice, not create_prorations
+const PORTAL_CONFIG_TAG = 'rvpa-plan-change-v4'; // v4: back to the $99 level1 price; v2: always_invoice, not create_prorations
 
 async function getOrCreatePortalConfiguration(canonicalPrices) {
   const existing = await stripe.billingPortal.configurations.list({ limit: 100 });

@@ -1,4 +1,4 @@
-// One advertising plan (Marie, Nov 2026: Levels 2 and 3 retired, $39/month).
+// One advertising plan (Marie, Nov 2026: Levels 2 and 3 retired, $99/month).
 // Keep in sync with api/_lib/plans.js — that runs in a separate Node
 // runtime and can't import this browser-side module.
 export const PLANS = [
@@ -7,7 +7,7 @@ export const PLANS = [
     name: 'Professional Listing',
     level: 'One simple plan',
     tagline: 'Get your park in front of serious RV park buyers',
-    monthly: 3900,
+    monthly: 9900,
     minMonths: 3,
     maxPhotos: 6,
     maxVideos: 0,
