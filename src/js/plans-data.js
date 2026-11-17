@@ -1,12 +1,14 @@
-// One advertising plan (Marie, Nov 2026: Levels 2 and 3 retired, $99/month).
+// Two ways to advertise (Nov 2026; Levels 2 and 3 retired):
+//   level1      $99/month, the owner sells it themselves, no commission
+//   withbroker  $49/month, Marie Hansen is the listing broker, commission only on a sale
 // Keep in sync with api/_lib/plans.js — that runs in a separate Node
 // runtime and can't import this browser-side module.
 export const PLANS = [
   {
     key: 'level1',
-    name: 'Professional Listing',
-    level: 'One simple plan',
-    tagline: 'Get your park in front of serious RV park buyers',
+    name: 'Sell It Yourself',
+    level: 'No commission',
+    tagline: 'We market your park; you handle the buyers',
     monthly: 9900,
     minMonths: 3,
     maxPhotos: 6,
@@ -20,6 +22,25 @@ export const PLANS = [
       'Buyer inquiries sent straight to you',
       'Up to 6 photos',
       'Views & inquiries report in your dashboard',
+    ],
+  },
+  {
+    key: 'withbroker',
+    name: 'Sell With Marie',
+    level: 'Marie as your broker',
+    tagline: 'Lower monthly price, and a broker works the sale for you',
+    monthly: 4900,
+    minMonths: 3,
+    maxPhotos: 6,
+    maxVideos: 0,
+    featured: true,
+    badgeLabel: 'Lowest monthly price',
+    features: [
+      'Everything in Sell It Yourself',
+      'Marie Hansen of RVParkSales as your listing broker',
+      'Help pricing your park',
+      'Buyer screening, negotiation & closing support',
+      'Commission paid only if your park sells',
     ],
   },
 ];

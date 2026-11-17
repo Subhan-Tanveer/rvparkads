@@ -15,7 +15,7 @@ const form = document.getElementById('listingForm');
 const submitBtn = document.getElementById('submitBtn');
 const formAlert = document.getElementById('formAlert');
 
-const PLAN_LABELS = { level1: 'Professional Listing — $99/month', level2: 'Level 2 — $299/month', level3: 'Level 3 — $499/month' };
+const PLAN_LABELS = { level1: 'Sell It Yourself — $99/month', withbroker: 'Sell With Marie (broker) — $49/month', level2: 'Level 2 — $299/month', level3: 'Level 3 — $499/month' };
 
 function showError(message) {
   loadingState.style.display = 'none';

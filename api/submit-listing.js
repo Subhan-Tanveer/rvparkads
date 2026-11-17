@@ -147,11 +147,11 @@ export default async function handler(req, res) {
     // long undifferentiated table.
     await sendEmail({
       to: 'marie@rvparksales.com',
-      subject: `New listing submitted: ${b.listingName} (${plan.name})`,
+      subject: `${plan.broker ? 'BROKER CLIENT, send listing agreement: ' : 'New listing submitted: '}${b.listingName} (${plan.name})`,
       html: renderEmail({
         eyebrow: `New Paid ${categoryLabel} Listing`,
         title: `${b.listingName} — ${plan.name}`,
-        intro: `${sellerName} just completed their ${categoryLabel} listing after paying for ${plan.name} ($${(plan.monthly / 100).toFixed(0)}/month).`,
+        intro: `${sellerName} just completed their ${categoryLabel} listing after paying for ${plan.name} ($${(plan.monthly / 100).toFixed(0)}/month).${plan.broker ? ' They chose you as their broker: send them your listing agreement (commission paid only if the park sells).' : ''}`,
         sections: [
           {
             heading: 'Seller',
